@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const ingredientRouter = require('./routes/ingredient'); //이미지 업로드 API
 const ingredientsRouter = require('./routes/ingredients'); // DB table 연결 API
+const recommendRouter = require('./routes/recommend'); // OpenAI API
+
 
 
 const app = express();
@@ -13,6 +15,7 @@ app.use(express.json());
 
 app.use('/api/ingredient', ingredientRouter);  // POST /api/ingredient/upload
 app.use('/api/ingredients', ingredientsRouter); // GET, POST /api/ingredients
+app.use('/api/recommend', recommendRouter); // GET /api/recommend
 
 const PORT = process.env.PORT || 3000;
 
