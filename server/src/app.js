@@ -11,6 +11,8 @@ const ingredientRoutes = require('./routes/ingredientRoutes');
 const visionRoutes = require('./routes/visionRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
 
+const notificationScheduler = require('./services/NotificationScheduler');
+
 const app = express();
 
 // 미들웨어 설정
@@ -54,6 +56,9 @@ async function startServer() {
     console.log('Database sync options:', syncOptions);
     await sequelize.sync(syncOptions);
     console.log('Database tables synchronized');
+
+    // 서버 시작 시 알림 스케줄러 실행
+    notificationScheduler.start();
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

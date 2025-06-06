@@ -1,22 +1,34 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const sequelize = require('../db/sequelize');
 
 const NotificationSetting = sequelize.define('NotificationSetting', {
   id: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
   userId: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'user_id'
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  notifyTime: {
+    type: DataTypes.TIME,
+    allowNull: false,
+    defaultValue: '09:00:00'
+  },
+  notifyDays: {
+    type: DataTypes.JSON,
+    allowNull: false,
+    defaultValue: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
   },
   isEnabled: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: true,
-    field: 'is_enabled'
+    defaultValue: true
   }
 }, {
   tableName: 'notification_settings',
