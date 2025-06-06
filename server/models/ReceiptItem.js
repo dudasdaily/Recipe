@@ -1,22 +1,41 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const FCMToken = sequelize.define('FCMToken', {
+  const ReceiptItem = sequelize.define('ReceiptItem', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    token: {
+    receiptId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'receipts',
+        key: 'id',
+      },
+    },
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
     },
-    userId: {
+    quantity: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    unit: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    ingredientId: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'ingredients',
         key: 'id',
       },
     },
@@ -31,9 +50,9 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.NOW,
     }
   }, {
-    tableName: 'fcm_tokens',
+    tableName: 'receipt_items',
     timestamps: true,
   });
 
-  return FCMToken;
-};
+  return ReceiptItem;
+}; 

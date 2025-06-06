@@ -1,5 +1,5 @@
 // models/index.js
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize } = require('sequelize');
 
 // .env 파일에서 환경변수 불러오기
 require('dotenv').config();
@@ -15,35 +15,60 @@ const sequelize = new Sequelize(
   }
 );
 
-// Ingredient 모델 정의
-const Ingredient = sequelize.define('Ingredient', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  name: {
-    type: DataTypes.STRING(50),
-    allowNull: false
-  },
-  quantity: {
-    type: DataTypes.INTEGER
-  },
-  expiry_date: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-  }
-}, {
-  tableName: 'ingredients',
-  timestamps: false
+// 모델 불러오기
+const User = require('./User')(sequelize);
+const Receipt = require('./Receipt')(sequelize);
+const ReceiptItem = require('./ReceiptItem')(sequelize);
+const Ingredient = require('./Ingredient')(sequelize);
+const FCMToken = require('./FCMToken')(sequelize);
+
+// 관계 설정
+User.hasMany(Receipt, {
+  foreignKey: 'userId',
+  as: 'receipts'
+});
+
+Receipt.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+Receipt.hasMany(ReceiptItem, {
+  foreignKey: 'receiptId',
+  as: 'items'
+});
+
+ReceiptItem.belongsTo(Receipt, {
+  foreignKey: 'receiptId',
+  as: 'receipt'
+});
+
+ReceiptItem.belongsTo(Ingredient, {
+  foreignKey: 'ingredientId',
+  as: 'ingredient'
+});
+
+Ingredient.hasMany(ReceiptItem, {
+  foreignKey: 'ingredientId',
+  as: 'receiptItems'
+});
+
+User.hasMany(FCMToken, {
+  foreignKey: 'userId',
+  as: 'fcmTokens'
+});
+
+FCMToken.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
 });
 
 // 모델 export
 module.exports = {
   sequelize,
-  Ingredient
+  User,
+  Receipt,
+  ReceiptItem,
+  Ingredient,
+  FCMToken
 };

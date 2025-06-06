@@ -1,24 +1,24 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const FCMToken = sequelize.define('FCMToken', {
+  const User = sequelize.define('User', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    token: {
+    email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'users',
-        key: 'id',
-      },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -31,9 +31,9 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.NOW,
     }
   }, {
-    tableName: 'fcm_tokens',
+    tableName: 'users',
     timestamps: true,
   });
 
-  return FCMToken;
-};
+  return User;
+}; 

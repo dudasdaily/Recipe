@@ -3,6 +3,7 @@ const cors = require('cors');
 const sequelize = require('./config/database');
 const ingredientRoutes = require('./routes/ingredientRoutes');
 const visionRoutes = require('./routes/visionRoutes');
+const ocrRoutes = require('./routes/ocrRoutes');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 // 라우트
 app.use('/api/v1/ingredients', ingredientRoutes);
 app.use('/api/v1/vision', visionRoutes);
+app.use('/api/v1/ocr', ocrRoutes);
 
 // 에러 핸들링 미들웨어
 app.use((err, req, res, next) => {
@@ -46,4 +48,6 @@ async function startServer() {
   }
 }
 
-startServer(); 
+startServer();
+
+module.exports = app; 
