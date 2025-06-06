@@ -18,87 +18,113 @@
 
 ## 2. 데이터베이스 설계
 
-### 2.1 재료 테이블 (Ingredients)
+### 2.1 사용자 테이블 (Users)
+```sql
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '사용자 고유 ID',
+    email VARCHAR(255) NOT NULL UNIQUE COMMENT '이메일',
+    password VARCHAR(255) NOT NULL COMMENT '비밀번호 (해시)',
+    name VARCHAR(50) NOT NULL COMMENT '이름',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+    INDEX idx_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사용자 정보 테이블';
+```
+
+### 2.2 식재료 테이블 (Ingredients)
 ```sql
 CREATE TABLE ingredients (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    expiry_date DATE NOT NULL,
-    quantity INT NOT NULL,
-    unit VARCHAR(20),           -- 단위 추가 (개, g, kg 등)
-    price DECIMAL(10,2),        -- 가격 정보 추가
-    receipt_item_id BIGINT,     -- 영수증 항목 참조
-    memo TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (receipt_item_id) REFERENCES receipt_items(id)
-);
+    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '식재료 고유 ID',
+    name VARCHAR(100) NOT NULL COMMENT '식재료명',
+    category VARCHAR(50) COMMENT '카테고리',
+    storage_type ENUM('ROOM_TEMP', 'REFRIGERATED', 'FROZEN') DEFAULT 'ROOM_TEMP' COMMENT '보관 방법',
+    default_expiry_days INT COMMENT '기본 유통기한(일)',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+    INDEX idx_ingredients_name (name),
+    INDEX idx_ingredients_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='식재료 마스터 테이블';
 ```
 
-### 2.2 영수증 테이블 (Receipts)
+### 2.3 영수증 테이블 (Receipts)
 ```sql
 CREATE TABLE receipts (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    store_name VARCHAR(100),
-    purchase_date DATE,
-    total_amount DECIMAL(10,2),
-    image_url VARCHAR(255),     -- 영수증 이미지 저장 경로
-    memo TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '영수증 고유 ID',
+    user_id INT NOT NULL COMMENT '사용자 ID',
+    store_name VARCHAR(100) COMMENT '구매처',
+    purchase_date DATE NOT NULL COMMENT '구매일',
+    total_amount DECIMAL(10,2) COMMENT '총 구매금액',
+    receipt_image_url VARCHAR(255) COMMENT '영수증 이미지 URL',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_receipts_user_purchase (user_id, purchase_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='영수증 테이블';
 ```
 
-### 2.3 영수증 항목 테이블 (Receipt_Items)
+### 2.4 영수증 항목 테이블 (Receipt_Items)
 ```sql
 CREATE TABLE receipt_items (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    receipt_id BIGINT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    quantity INT,
-    unit VARCHAR(20),
-    price DECIMAL(10,2),
-    total_price DECIMAL(10,2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (receipt_id) REFERENCES receipts(id)
-);
+    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '영수증 항목 고유 ID',
+    receipt_id INT NOT NULL COMMENT '영수증 ID',
+    ingredient_id INT NOT NULL COMMENT '식재료 ID',
+    quantity INT NOT NULL COMMENT '수량',
+    price DECIMAL(10,2) COMMENT '가격',
+    expiry_date DATE COMMENT '유통기한',
+    storage_location VARCHAR(50) COMMENT '보관 위치',
+    memo TEXT COMMENT '메모',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+    FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE,
+    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE RESTRICT,
+    INDEX idx_receipt_items_receipt (receipt_id),
+    INDEX idx_receipt_items_ingredient (ingredient_id),
+    INDEX idx_receipt_items_expiry (expiry_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='영수증 항목 테이블';
 ```
 
-### 2.4 알림 설정 테이블 (NotificationSettings)
+### 2.5 FCM 토큰 테이블 (FCM_Tokens)
 ```sql
-CREATE TABLE notification_settings (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    is_enabled BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+CREATE TABLE fcm_tokens (
+    id INT PRIMARY KEY AUTO_INCREMENT COMMENT 'FCM 토큰 고유 ID',
+    user_id INT COMMENT '사용자 ID (외래키)',
+    token VARCHAR(255) NOT NULL COMMENT 'Firebase Cloud Messaging 토큰',
+    device_info JSON COMMENT '디바이스 정보 (운영체제, 버전 등)',
+    notify_time TIME DEFAULT '09:00:00' COMMENT '알림 발송 시간',
+    is_active BOOLEAN DEFAULT TRUE COMMENT '토큰 활성화 상태',
+    last_used_at DATETIME COMMENT '마지막 사용 시간',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+    UNIQUE KEY uk_fcm_tokens_token (token),
+    INDEX idx_fcm_tokens_user_id (user_id),
+    INDEX idx_fcm_tokens_notify_time (notify_time),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='FCM 토큰 관리 테이블';
 ```
 
 ## 3. API 설계
 
 ### 3.1 재료 관리 API
 ```
-POST /api/v1/ingredients
+POST /api/ingredients
 - 새로운 재료 추가
 
-GET /api/v1/ingredients
+GET /api/ingredients
 - 재료 목록 조회
 - Query Parameters:
   - sort: expiry_date, name, created_at
   - order: asc, desc
 
-PUT /api/v1/ingredients/{id}
+PUT /api/ingredients/{id}
 - 재료 정보 수정
 
-DELETE /api/v1/ingredients/{id}
+DELETE /api/ingredients/{id}
 - 재료 삭제
 ```
 
 ### 3.2 이미지 처리 API
 ```
-POST /api/v1/vision/analyze
+POST /api/vision/analyze
 - 이미지 분석 및 식재료 인식
 - 응답:
   - success: boolean
@@ -106,7 +132,7 @@ POST /api/v1/vision/analyze
   - message: 상세 메시지
   - suggestions: 개선 제안사항
 
-POST /api/v1/vision/receipt
+POST /api/vision/receipt
 - 영수증 이미지 OCR 처리
 - 응답:
   - success: boolean
@@ -121,11 +147,28 @@ POST /api/v1/vision/receipt
 
 ### 3.3 알림 API
 ```
-GET /api/v1/notifications/settings
-- 알림 설정 조회
+POST /api/fcm/register
+- FCM 토큰 등록
+- Request Body:
+  - token: FCM 토큰 문자열
+  - userId: 사용자 ID (선택)
+  - deviceInfo: 디바이스 정보 (선택)
 
-PUT /api/v1/notifications/settings
-- 알림 설정 수정
+POST /api/fcm/set-time
+- 알림 시간 설정
+- Request Body:
+  - token: FCM 토큰
+  - notifyTime: 알림 시간 (HH:mm:ss 형식)
+
+POST /api/fcm/test
+- 테스트 알림 전송
+- Request Body:
+  - token: FCM 토큰
+  - title: 알림 제목
+  - body: 알림 내용
+
+POST /api/fcm/notify-expiring
+- 유통기한 임박 알림 수동 트리거
 ```
 
 ## 4. 클라이언트 앱 설계
