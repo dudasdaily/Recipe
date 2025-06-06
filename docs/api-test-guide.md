@@ -188,3 +188,147 @@ Body:
 - 400: 잘못된 요청
 - 404: 리소스를 찾을 수 없음
 - 500: 서버 내부 오류 
+
+## API 응답 예시
+
+### 1. 재료(Ingredients) API 응답
+
+#### 1.1. 재료 생성 응답
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "당근",
+        "category": "채소",
+        "storage_type": "REFRIGERATED",
+        "default_expiry_days": 7,
+        "created_at": "2024-03-19T12:00:00.000Z",
+        "updated_at": "2024-03-19T12:00:00.000Z"
+    }
+}
+```
+
+#### 1.2. 재료 수정 응답
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "당근",
+        "category": "채소",
+        "storage_type": "REFRIGERATED",
+        "default_expiry_days": 7,
+        "created_at": "2024-03-19T12:00:00.000Z",
+        "updated_at": "2024-03-19T12:30:00.000Z"
+    }
+}
+```
+
+#### 1.3. 재료 삭제 응답
+```json
+{
+    "success": true,
+    "message": "재료가 성공적으로 삭제되었습니다."
+}
+```
+
+### 2. 영수증 OCR API 응답
+
+#### 2.1. 영수증 이미지 분석 응답
+```json
+{
+    "success": true,
+    "data": {
+        "receipt": {
+            "id": 1,
+            "storeName": "마트이름",
+            "purchaseDate": "2024-03-19",
+            "totalAmount": 50000,
+            "imageUrl": "/uploads/receipts/receipt-1.jpg"
+        },
+        "items": [
+            {
+                "id": 1,
+                "name": "당근",
+                "quantity": 3,
+                "unit": "개",
+                "price": 3000
+            },
+            {
+                "id": 2,
+                "name": "양파",
+                "quantity": 2,
+                "unit": "개",
+                "price": 2000
+            }
+        ]
+    }
+}
+```
+
+#### 2.2. 저장된 영수증 조회 응답
+```json
+{
+    "success": true,
+    "data": {
+        "receipt": {
+            "id": 1,
+            "storeName": "마트이름",
+            "purchaseDate": "2024-03-19",
+            "totalAmount": 50000,
+            "imageUrl": "/uploads/receipts/receipt-1.jpg",
+            "items": [
+                {
+                    "id": 1,
+                    "name": "당근",
+                    "quantity": 3,
+                    "unit": "개",
+                    "price": 3000
+                },
+                {
+                    "id": 2,
+                    "name": "양파",
+                    "quantity": 2,
+                    "unit": "개",
+                    "price": 2000
+                }
+            ]
+        }
+    }
+}
+```
+
+### 3. 이미지 분석(Vision) API 응답
+
+#### 3.1. 이미지 분석 응답
+```json
+{
+    "success": true,
+    "data": {
+        "ingredients": [
+            {
+                "name": "당근",
+                "confidence": 0.95,
+                "original": "Carrot"
+            },
+            {
+                "name": "양파",
+                "confidence": 0.88,
+                "original": "Onion"
+            }
+        ],
+        "message": "다음과 같은 식재료들이 감지되었습니다.",
+        "count": 2
+    }
+}
+```
+
+실패 응답 예시:
+```json
+{
+    "success": false,
+    "message": "이미지에서 식재료를 찾을 수 없습니다.",
+    "suggestion": "다른 각도에서 찍은 사진이나, 더 밝은 조명에서 찍은 사진으로 다시 시도해보세요."
+}
+``` 
