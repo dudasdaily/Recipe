@@ -25,13 +25,47 @@ CREATE TABLE ingredients (
     name VARCHAR(100) NOT NULL,
     expiry_date DATE NOT NULL,
     quantity INT NOT NULL,
+    unit VARCHAR(20),           -- 단위 추가 (개, g, kg 등)
+    price DECIMAL(10,2),        -- 가격 정보 추가
+    receipt_item_id BIGINT,     -- 영수증 항목 참조
+    memo TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (receipt_item_id) REFERENCES receipt_items(id)
+);
+```
+
+### 2.2 영수증 테이블 (Receipts)
+```sql
+CREATE TABLE receipts (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    store_name VARCHAR(100),
+    purchase_date DATE,
+    total_amount DECIMAL(10,2),
+    image_url VARCHAR(255),     -- 영수증 이미지 저장 경로
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
-### 2.2 알림 설정 테이블 (NotificationSettings)
+### 2.3 영수증 항목 테이블 (Receipt_Items)
+```sql
+CREATE TABLE receipt_items (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    receipt_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    quantity INT,
+    unit VARCHAR(20),
+    price DECIMAL(10,2),
+    total_price DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (receipt_id) REFERENCES receipts(id)
+);
+```
+
+### 2.4 알림 설정 테이블 (NotificationSettings)
 ```sql
 CREATE TABLE notification_settings (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -62,13 +96,27 @@ DELETE /api/v1/ingredients/{id}
 - 재료 삭제
 ```
 
-### 3.2 영수증/이미지 처리 API
+### 3.2 이미지 처리 API
 ```
-POST /api/v1/scan/receipt
-- 영수증 스캔 및 정보 추출
+POST /api/v1/vision/analyze
+- 이미지 분석 및 식재료 인식
+- 응답:
+  - success: boolean
+  - ingredients: 감지된 식재료 목록 (신뢰도별 분류)
+  - message: 상세 메시지
+  - suggestions: 개선 제안사항
 
-POST /api/v1/scan/image
-- 재료 이미지 인식
+POST /api/v1/vision/receipt
+- 영수증 이미지 OCR 처리
+- 응답:
+  - success: boolean
+  - items: 감지된 상품 목록
+    - name: 상품명
+    - price: 가격
+    - quantity: 수량 (있는 경우)
+  - total: 총액 (감지된 경우)
+  - date: 구매 일자 (감지된 경우)
+  - store: 상점 정보 (감지된 경우)
 ```
 
 ### 3.3 알림 API
@@ -104,15 +152,21 @@ PUT /api/v1/notifications/settings
 
 ## 5. 외부 서비스 연동
 
-### 5.1 OCR 서비스
+### 5.1 이미지 인식 및 OCR 서비스
 - Google Cloud Vision API 사용
-- 영수증 텍스트 추출 및 파싱
+- 이미지 내 객체 감지 (Object Detection)
+  - 식재료 인식 및 분류
+  - 신뢰도 기반 결과 필터링 (80% 이상: 확실, 60-80%: 추정, 60% 미만: 불확실)
+  - 한글 변환 사전 적용 (채소류, 과일류, 육류, 해산물, 기타 재료)
+- OCR (Optical Character Recognition)
+  - 영수증 텍스트 추출
+  - 구조화된 데이터 파싱
+    - 상품명과 가격 매칭
+    - 날짜 및 시간 추출
+    - 상점 정보 추출
+  - 한글 영수증 최적화 처리
 
-### 5.2 이미지 인식 서비스
-- Google Cloud Vision API 사용
-- 재료 이미지 분류 및 인식
-
-### 5.3 푸시 알림 서비스
+### 5.2 푸시 알림 서비스
 - Firebase Cloud Messaging 사용
 - 유통기한 알림 전송
 
