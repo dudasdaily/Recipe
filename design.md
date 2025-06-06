@@ -128,9 +128,19 @@ POST /api/vision/analyze
 - 이미지 분석 및 식재료 인식
 - 응답:
   - success: boolean
-  - ingredients: 감지된 식재료 목록 (신뢰도별 분류)
-  - message: 상세 메시지
-  - suggestions: 개선 제안사항
+  - data: {
+    ingredients: [
+      {
+        name: string (한글 식재료명),
+        confidence: number (신뢰도 0~1),
+        original: string (영문 원본명)
+      }
+    ],
+    message: string (처리 결과 메시지),
+    count?: number (감지된 재료 수),
+    suggestion?: string (개선 제안사항)
+  }
+  - error?: string (에러 발생 시 에러 메시지)
 
 POST /api/vision/receipt
 - 영수증 이미지 OCR 처리
@@ -235,6 +245,14 @@ POST /api/fcm/notify-expiring
 - 데이터베이스 인덱싱
 - API 응답 캐싱
 - 비동기 처리
+- 데이터베이스 커넥션 풀 관리
+  - 최대 연결 수: 10
+  - 최소 연결 수: 0
+  - 연결 획득 타임아웃: 30초
+  - 유휴 타임아웃: 10초
+- 로깅 최적화
+  - 개발 환경: 상세 로깅
+  - 프로덕션 환경: 에러 로깅만 활성화
 
 ## 8. 배포 전략
 
