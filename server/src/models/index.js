@@ -1,5 +1,5 @@
 // models/index.js
-const sequelize = require('../db');
+const sequelize = require('../config/db');
 
 // 모델 불러오기
 const User = require('./User')(sequelize);
@@ -8,36 +8,18 @@ const ReceiptItem = require('./ReceiptItem')(sequelize);
 const Ingredient = require('./Ingredient')(sequelize);
 const FCMToken = require('./FCMToken')(sequelize);
 
-// 관계 설정
-User.hasMany(Receipt, {
-  foreignKey: 'userId',
-  as: 'receipts'
-});
+// 모델 간 관계 설정
+User.hasMany(Ingredient);
+Ingredient.belongsTo(User);
 
-Receipt.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user'
-});
+User.hasMany(Receipt);
+Receipt.belongsTo(User);
 
-Receipt.hasMany(ReceiptItem, {
-  foreignKey: 'receiptId',
-  as: 'items'
-});
+Receipt.hasMany(ReceiptItem);
+ReceiptItem.belongsTo(Receipt);
 
-ReceiptItem.belongsTo(Receipt, {
-  foreignKey: 'receiptId',
-  as: 'receipt'
-});
-
-ReceiptItem.belongsTo(Ingredient, {
-  foreignKey: 'ingredientId',
-  as: 'ingredient'
-});
-
-Ingredient.hasMany(ReceiptItem, {
-  foreignKey: 'ingredientId',
-  as: 'receiptItems'
-});
+Ingredient.hasMany(ReceiptItem);
+ReceiptItem.belongsTo(Ingredient);
 
 User.hasMany(FCMToken, {
   foreignKey: 'user_id',

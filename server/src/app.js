@@ -1,18 +1,27 @@
 const express = require('express');
 const cors = require('cors');
-const sequelize = require('./config/database');
+const path = require('path');
+require('dotenv').config();
+
+// 데이터베이스 연결
+const { sequelize } = require('./models');
+
+// 라우터 임포트
 const ingredientRoutes = require('./routes/ingredientRoutes');
 const visionRoutes = require('./routes/visionRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
 
 const app = express();
 
-// 미들웨어
+// 미들웨어 설정
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 라우트
+// 정적 파일 제공
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// API 라우트
 app.use('/api/v1/ingredients', ingredientRoutes);
 app.use('/api/v1/vision', visionRoutes);
 app.use('/api/v1/ocr', ocrRoutes);
@@ -34,17 +43,16 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
     
-    // 개발 환경에서만 테이블 동기화
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync();
-      console.log('Database synchronized');
-    }
+    // 개발 환경에서 테이블 강제 동기화
+    await sequelize.sync({ force: true });
+    console.log('Database tables synchronized');
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
     console.error('Unable to connect to the database:', error);
+    process.exit(1);
   }
 }
 

@@ -1,5 +1,5 @@
 const ocrService = require('../services/ocrService');
-const { Receipt, ReceiptItem, sequelize } = require('../../models');
+const { Receipt, ReceiptItem, sequelize } = require('../models');
 
 /**
  * 영수증 OCR 컨트롤러
