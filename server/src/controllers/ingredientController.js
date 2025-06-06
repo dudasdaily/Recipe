@@ -79,21 +79,33 @@ exports.getIngredient = async (req, res) => {
 
 exports.updateIngredient = async (req, res) => {
   try {
+    console.log('Update ingredient request:', {
+      id: req.params.id,
+      body: req.body
+    });
+
     const [updated] = await Ingredient.update(req.body, {
       where: { id: req.params.id }
     });
+
+    console.log('Update result:', updated);
+
     if (!updated) {
       return res.status(404).json({
         success: false,
         message: '재료를 찾을 수 없습니다.'
       });
     }
+
     const ingredient = await Ingredient.findByPk(req.params.id);
+    console.log('Updated ingredient:', ingredient);
+
     res.status(200).json({
       success: true,
       data: formatIngredient(ingredient)
     });
   } catch (error) {
+    console.error('재료 수정 중 오류:', error);
     res.status(500).json({
       success: false,
       message: error.message || '재료 수정에 실패했습니다.'

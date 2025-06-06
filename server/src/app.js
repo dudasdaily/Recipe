@@ -43,8 +43,16 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
     
-    // 개발 환경에서 테이블 강제 동기화
-    await sequelize.sync({ force: true });
+    // 개발 환경에서만 force 옵션 사용
+    const syncOptions = {
+      // 개발 환경에서만 force: true 사용
+      force: process.env.NODE_ENV === 'development' && process.env.DB_FORCE_SYNC === 'true',
+      // 테이블이 없을 때만 생성
+      alter: true
+    };
+    
+    console.log('Database sync options:', syncOptions);
+    await sequelize.sync(syncOptions);
     console.log('Database tables synchronized');
 
     app.listen(PORT, () => {
