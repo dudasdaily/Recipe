@@ -18,88 +18,100 @@
 
 ## 2. 데이터베이스 설계
 
+### 2.0 데이터베이스 생성
+```sql
+CREATE DATABASE IF NOT EXISTS recipe_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE recipe_db;
+```
+
 ### 2.1 사용자 테이블 (Users)
 ```sql
 CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '사용자 고유 ID',
-    email VARCHAR(255) NOT NULL UNIQUE COMMENT '이메일',
-    password VARCHAR(255) NOT NULL COMMENT '비밀번호 (해시)',
-    name VARCHAR(50) NOT NULL COMMENT '이름',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
-    INDEX idx_users_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사용자 정보 테이블';
+  id INT NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  password VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  name VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  createdAt DATETIME NOT NULL,
+  updatedAt DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY unique_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 ### 2.2 식재료 테이블 (Ingredients)
 ```sql
 CREATE TABLE ingredients (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '식재료 고유 ID',
-    name VARCHAR(100) NOT NULL COMMENT '식재료명',
-    category VARCHAR(50) COMMENT '카테고리',
-    storage_type ENUM('ROOM_TEMP', 'REFRIGERATED', 'FROZEN') DEFAULT 'ROOM_TEMP' COMMENT '보관 방법',
-    default_expiry_days INT COMMENT '기본 유통기한(일)',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
-    INDEX idx_ingredients_name (name),
-    INDEX idx_ingredients_category (category)
+  id INT NOT NULL AUTO_INCREMENT COMMENT '식재료 고유 ID',
+  name VARCHAR(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '식재료명',
+  category VARCHAR(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '카테고리',
+  storage_type ENUM('ROOM_TEMP','REFRIGERATED','FROZEN') COLLATE utf8mb4_unicode_ci DEFAULT 'ROOM_TEMP' COMMENT '보관 방법',
+  default_expiry_days INT DEFAULT 7 COMMENT '기본 유통기한(일)',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  user_id INT DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY user_id (user_id),
+  CONSTRAINT ingredients_ibfk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='식재료 마스터 테이블';
 ```
 
 ### 2.3 영수증 테이블 (Receipts)
 ```sql
 CREATE TABLE receipts (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '영수증 고유 ID',
-    user_id INT NOT NULL COMMENT '사용자 ID',
-    store_name VARCHAR(100) COMMENT '구매처',
-    purchase_date DATE NOT NULL COMMENT '구매일',
-    total_amount DECIMAL(10,2) COMMENT '총 구매금액',
-    receipt_image_url VARCHAR(255) COMMENT '영수증 이미지 URL',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_receipts_user_purchase (user_id, purchase_date)
+  id INT NOT NULL AUTO_INCREMENT COMMENT '영수증 고유 ID',
+  user_id INT DEFAULT NULL,
+  store_name VARCHAR(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '구매처',
+  purchase_date DATETIME NOT NULL COMMENT '구매일',
+  total_amount DECIMAL(10,2) DEFAULT NULL COMMENT '총 구매금액',
+  receipt_image_url VARCHAR(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '영수증 이미지 URL',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_receipts_user_purchase (user_id, purchase_date),
+  CONSTRAINT receipts_ibfk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='영수증 테이블';
 ```
 
 ### 2.4 영수증 항목 테이블 (Receipt_Items)
 ```sql
 CREATE TABLE receipt_items (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '영수증 항목 고유 ID',
-    receipt_id INT NOT NULL COMMENT '영수증 ID',
-    ingredient_id INT NOT NULL COMMENT '식재료 ID',
-    quantity INT NOT NULL COMMENT '수량',
-    price DECIMAL(10,2) COMMENT '가격',
-    expiry_date DATE COMMENT '유통기한',
-    storage_location VARCHAR(50) COMMENT '보관 위치',
-    memo TEXT COMMENT '메모',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
-    FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE,
-    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE RESTRICT,
-    INDEX idx_receipt_items_receipt (receipt_id),
-    INDEX idx_receipt_items_ingredient (ingredient_id),
-    INDEX idx_receipt_items_expiry (expiry_date)
+  id INT NOT NULL AUTO_INCREMENT COMMENT '영수증 항목 고유 ID',
+  receipt_id INT DEFAULT NULL,
+  ingredient_id INT DEFAULT NULL,
+  quantity INT NOT NULL COMMENT '수량',
+  price DECIMAL(10,2) DEFAULT NULL COMMENT '가격',
+  expiry_date DATETIME DEFAULT NULL COMMENT '유통기한',
+  storage_location VARCHAR(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '보관 위치',
+  memo TEXT COLLATE utf8mb4_unicode_ci COMMENT '메모',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_receipt_items_receipt (receipt_id),
+  KEY idx_receipt_items_ingredient (ingredient_id),
+  KEY idx_receipt_items_expiry (expiry_date),
+  CONSTRAINT receipt_items_ibfk_43 FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT receipt_items_ibfk_44 FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='영수증 항목 테이블';
 ```
 
 ### 2.5 FCM 토큰 테이블 (FCM_Tokens)
 ```sql
 CREATE TABLE fcm_tokens (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT 'FCM 토큰 고유 ID',
-    user_id INT COMMENT '사용자 ID (외래키)',
-    token VARCHAR(255) NOT NULL COMMENT 'Firebase Cloud Messaging 토큰',
-    device_info JSON COMMENT '디바이스 정보 (운영체제, 버전 등)',
-    notify_time TIME DEFAULT '09:00:00' COMMENT '알림 발송 시간',
-    is_active BOOLEAN DEFAULT TRUE COMMENT '토큰 활성화 상태',
-    last_used_at DATETIME COMMENT '마지막 사용 시간',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시간',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
-    UNIQUE KEY uk_fcm_tokens_token (token),
-    INDEX idx_fcm_tokens_user_id (user_id),
-    INDEX idx_fcm_tokens_notify_time (notify_time),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='FCM 토큰 관리 테이블';
+  id INT NOT NULL AUTO_INCREMENT COMMENT 'FCM 토큰 고유 ID',
+  user_id INT DEFAULT NULL COMMENT '사용자 ID (외래키)',
+  token VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Firebase Cloud Messaging 토큰',
+  device_info JSON DEFAULT NULL COMMENT '디바이스 정보 (운영체제, 버전 등)',
+  notify_time TIME DEFAULT '09:00:00' COMMENT '알림 발송 시간',
+  is_active TINYINT(1) DEFAULT 1 COMMENT '토큰 활성화 상태',
+  last_used_at DATETIME DEFAULT NULL COMMENT '마지막 사용 시간',
+  created_at DATETIME DEFAULT NULL COMMENT '생성 시간',
+  updated_at DATETIME DEFAULT NULL COMMENT '수정 시간',
+  PRIMARY KEY (id),
+  UNIQUE KEY unique_token (token),
+  KEY idx_fcm_tokens_user_id (user_id),
+  KEY idx_fcm_tokens_notify_time (notify_time),
+  CONSTRAINT fcm_tokens_ibfk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 ## 3. API 설계

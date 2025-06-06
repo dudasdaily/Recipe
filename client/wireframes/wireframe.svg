@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="1000" xmlns="http://www.w3.org/2000/svg">
+    <!-- 스타일 정의 -->
+    <defs>
+        <filter id="shadow" x="-2" y="-2" width="110%" height="110%">
+            <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#0003"/>
+        </filter>
+        <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#7F7FD5;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#86A8E7;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#91EAE4;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+
+    <!-- 메인 화면 -->
+    <g transform="translate(50,50)">
+        <!-- 메인 카드 배경 -->
+        <rect x="0" y="0" width="320" height="800" rx="20" fill="white" stroke="#E0E0E0" filter="url(#shadow)" />
+        
+        <!-- 헤더 -->
+        <rect x="0" y="0" width="320" height="90" rx="20" fill="url(#headerGrad)" />
+        <text x="20" y="52" fill="white" style="font-family: Arial; font-size: 22px; font-weight: bold">나의 식재료</text>
+        
+        <!-- 검색 바 -->
+        <g transform="translate(20,110)">
+            <rect width="280" height="45" rx="22.5" fill="white" stroke="#E0E0E0" filter="url(#shadow)" />
+            <text x="25" y="28" fill="#666" style="font-family: Arial; font-size: 14px">🔍 재료 검색...</text>
+        </g>
+        
+        <!-- 필터/정렬 칩 -->
+        <g transform="translate(20,175)">
+            <rect width="90" height="35" rx="17.5" fill="#f0f4ff" stroke="#7F7FD5" />
+            <text x="20" y="23" fill="#7F7FD5" style="font-family: Arial; font-size: 13px; font-weight: bold">정렬 ▼</text>
+            
+            <rect x="100" width="90" height="35" rx="17.5" fill="#f0f4ff" stroke="#7F7FD5" />
+            <text x="120" y="23" fill="#7F7FD5" style="font-family: Arial; font-size: 13px; font-weight: bold">필터 ▼</text>
+        </g>
+        
+        <!-- 재료 카드들 -->
+        <g transform="translate(20,235)">
+            <!-- 카드 1 -->
+            <g>
+                <rect width="280" height="140" rx="15" fill="url(#cardGrad)" stroke="#E0E0E0" filter="url(#shadow)" />
+                <circle cx="35" cy="45" r="30" fill="#FFE0E0" />
+                <text x="25" y="52" style="font-family: Arial; font-size: 24px">🥕</text>
+                
+                <g transform="translate(85,35)">
+                    <text style="font-family: Arial; font-size: 18px; font-weight: bold">당근</text>
+                    <text y="25" fill="#666" style="font-family: Arial; font-size: 14px">유통기한: 3일 남음</text>
+                    <text y="45" fill="#666" style="font-family: Arial; font-size: 14px">냉장 보관</text>
+                </g>
+
+                <!-- 알림 토글 -->
+                <g transform="translate(230,40)">
+                    <rect width="40" height="22" rx="11" fill="#7F7FD5" />
+                    <circle cx="28" cy="11" r="9" fill="white" />
+                </g>
+
+                <!-- 빠른 액션 버튼 -->
+                <g transform="translate(20,100)">
+                    <rect width="75" height="25" rx="12.5" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="15" y="17" fill="#7F7FD5" style="font-family: Arial; font-size: 12px">수정</text>
+                    
+                    <rect x="85" width="75" height="25" rx="12.5" fill="#ffe0e0" stroke="#ff7f7f" />
+                    <text x="100" y="17" fill="#ff7f7f" style="font-family: Arial; font-size: 12px">삭제</text>
+                </g>
+            </g>
+
+            <!-- 카드 2 -->
+            <g transform="translate(0,155)">
+                <rect width="280" height="140" rx="15" fill="url(#cardGrad)" stroke="#E0E0E0" filter="url(#shadow)" />
+                <circle cx="35" cy="45" r="30" fill="#E0FFE0" />
+                <text x="25" y="52" style="font-family: Arial; font-size: 24px">🧅</text>
+                
+                <g transform="translate(85,35)">
+                    <text style="font-family: Arial; font-size: 18px; font-weight: bold">양파</text>
+                    <text y="25" fill="#666" style="font-family: Arial; font-size: 14px">유통기한: 7일 남음</text>
+                    <text y="45" fill="#666" style="font-family: Arial; font-size: 14px">실온 보관</text>
+                </g>
+
+                <!-- 알림 토글 (꺼짐 상태) -->
+                <g transform="translate(230,40)">
+                    <rect width="40" height="22" rx="11" fill="#E0E0E0" />
+                    <circle cx="12" cy="11" r="9" fill="white" />
+                </g>
+
+                <!-- 빠른 액션 버튼 -->
+                <g transform="translate(20,100)">
+                    <rect width="75" height="25" rx="12.5" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="15" y="17" fill="#7F7FD5" style="font-family: Arial; font-size: 12px">수정</text>
+                    
+                    <rect x="85" width="75" height="25" rx="12.5" fill="#ffe0e0" stroke="#ff7f7f" />
+                    <text x="100" y="17" fill="#ff7f7f" style="font-family: Arial; font-size: 12px">삭제</text>
+                </g>
+            </g>
+        </g>
+        
+        <!-- 하단 네비게이션 -->
+        <g transform="translate(0,740)">
+            <!-- 탭 바 배경 -->
+            <defs>
+                <linearGradient id="tabBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="320" height="60" rx="20" fill="url(#tabBarGrad)" filter="url(#shadow)" />
+            
+            <!-- 블러 효과가 있는 반투명 오버레이 -->
+            <rect x="0" y="0" width="320" height="60" rx="20" fill="white" fill-opacity="0.7" />
+            
+            <!-- 구분선 -->
+            <line x1="0" y1="1" x2="320" y2="1" stroke="#E0E0E0" stroke-width="1" />
+            
+            <!-- 탭 아이템들 -->
+            <g transform="translate(30,0)">
+                <!-- 홈 탭 -->
+                <g transform="translate(20,10)">
+                    <rect width="60" height="40" rx="20" fill="#7F7FD5" filter="url(#shadow)" />
+                    <text x="30" y="25" fill="white" style="font-family: Arial; font-size: 16px; text-anchor: middle">🏠</text>
+                    <text x="30" y="48" fill="#7F7FD5" style="font-family: Arial; font-size: 10px; font-weight: bold; text-anchor: middle">홈</text>
+                </g>
+                
+                <!-- 추가 탭 -->
+                <g transform="translate(100,10)">
+                    <rect width="60" height="40" rx="20" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="30" y="25" fill="#7F7FD5" style="font-family: Arial; font-size: 16px; text-anchor: middle">➕</text>
+                    <text x="30" y="48" fill="#7F7FD5" style="font-family: Arial; font-size: 10px; font-weight: bold; text-anchor: middle">추가</text>
+                </g>
+                
+                <!-- 설정 탭 -->
+                <g transform="translate(180,10)">
+                    <rect width="60" height="40" rx="20" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="30" y="25" fill="#7F7FD5" style="font-family: Arial; font-size: 16px; text-anchor: middle">⚙️</text>
+                    <text x="30" y="48" fill="#7F7FD5" style="font-family: Arial; font-size: 10px; font-weight: bold; text-anchor: middle">설정</text>
+                </g>
+            </g>
+        </g>
+
+        <!-- 플로팅 액션 버튼 -->
+        <g transform="translate(260,680)">
+            <circle r="30" fill="url(#headerGrad)" filter="url(#shadow)" />
+            <text x="-12" y="8" style="font-family: Arial; font-size: 24px; fill: white">+</text>
+        </g>
+    </g>
+
+    <!-- 재료 추가/수정 화면 -->
+    <g transform="translate(420,50)">
+        <!-- 메인 카드 배경 -->
+        <rect x="0" y="0" width="320" height="800" rx="20" fill="white" stroke="#E0E0E0" filter="url(#shadow)" />
+        
+        <!-- 헤더 -->
+        <rect x="0" y="0" width="320" height="90" rx="20" fill="url(#headerGrad)" />
+        <text x="20" y="52" fill="white" style="font-family: Arial; font-size: 22px; font-weight: bold">재료 추가</text>
+        
+        <!-- 입력 폼 -->
+        <g transform="translate(20,120)">
+            <g>
+                <text style="font-family: Arial; font-size: 15px; font-weight: bold">재료명</text>
+                <rect y="15" width="280" height="60" rx="10" fill="#f8f9fa" stroke="#E0E0E0" />
+                <text x="15" y="48" fill="#666" style="font-family: Arial; font-size: 14px">재료명을 입력하세요</text>
+            </g>
+            
+            <g transform="translate(0,100)">
+                <text style="font-family: Arial; font-size: 15px; font-weight: bold">카테고리</text>
+                <rect y="15" width="280" height="60" rx="10" fill="#f8f9fa" stroke="#E0E0E0" />
+                <text x="15" y="48" fill="#666" style="font-family: Arial; font-size: 14px">선택하세요</text>
+                <text x="250" y="48" fill="#666">▼</text>
+            </g>
+            
+            <g transform="translate(0,200)">
+                <text style="font-family: Arial; font-size: 15px; font-weight: bold">보관 방법</text>
+                <g transform="translate(0,30)">
+                    <rect width="90" height="45" rx="22.5" fill="#7F7FD5" />
+                    <text x="25" y="28" fill="white" style="font-family: Arial; font-size: 13px">실온</text>
+                    
+                    <rect x="95" width="90" height="45" rx="22.5" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="120" y="28" fill="#7F7FD5" style="font-family: Arial; font-size: 13px">냉장</text>
+                    
+                    <rect x="190" width="90" height="45" rx="22.5" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="215" y="28" fill="#7F7FD5" style="font-family: Arial; font-size: 13px">냉동</text>
+                </g>
+            </g>
+
+            <g transform="translate(0,300)">
+                <text style="font-family: Arial; font-size: 15px; font-weight: bold">유통기한</text>
+                <rect y="15" width="280" height="60" rx="10" fill="#f8f9fa" stroke="#E0E0E0" />
+                <text x="15" y="48" fill="#666" style="font-family: Arial; font-size: 14px">2024-03-26</text>
+                <text x="250" y="48" fill="#666">📅</text>
+            </g>
+
+            <g transform="translate(0,400)">
+                <text style="font-family: Arial; font-size: 15px; font-weight: bold">알림 설정</text>
+                <rect y="15" width="280" height="70" rx="10" fill="#f8f9fa" stroke="#E0E0E0" />
+                <text x="15" y="42" fill="#666" style="font-family: Arial; font-size: 14px">유통기한 임박 시 알림 받기</text>
+                <!-- 알림 토글 -->
+                <g transform="translate(220,26)">
+                    <rect width="40" height="22" rx="11" fill="#7F7FD5" />
+                    <circle cx="28" cy="11" r="9" fill="white" />
+                </g>
+                <text x="15" y="65" fill="#999" style="font-family: Arial; font-size: 12px">유통기한 3일 전부터 알림</text>
+            </g>
+        </g>
+        
+        <!-- 버튼들 -->
+        <g transform="translate(20,700)">
+            <rect width="280" height="60" rx="30" fill="url(#headerGrad)" filter="url(#shadow)" />
+            <text x="120" y="37" fill="white" style="font-family: Arial; font-size: 16px; font-weight: bold">저장하기</text>
+        </g>
+    </g>
+
+    <!-- 설정 화면 -->
+    <g transform="translate(790,50)">
+        <!-- 메인 카드 배경 -->
+        <rect x="0" y="0" width="320" height="800" rx="20" fill="white" stroke="#E0E0E0" filter="url(#shadow)" />
+        
+        <!-- 헤더 -->
+        <rect x="0" y="0" width="320" height="90" rx="20" fill="url(#headerGrad)" />
+        <text x="20" y="52" fill="white" style="font-family: Arial; font-size: 22px; font-weight: bold">설정</text>
+        
+        <!-- 알림 설정 섹션 -->
+        <g transform="translate(20,120)">
+            <text style="font-family: Arial; font-size: 18px; font-weight: bold">알림 설정</text>
+            
+            <!-- 기본 알림 시간 -->
+            <g transform="translate(0,40)">
+                <rect width="280" height="80" rx="15" fill="#f8f9fa" stroke="#E0E0E0" />
+                <text x="15" y="35" style="font-family: Arial; font-size: 15px">기본 알림 시간</text>
+                <rect x="180" y="20" width="85" height="35" rx="17.5" fill="white" stroke="#7F7FD5" />
+                <text x="195" y="42" fill="#7F7FD5" style="font-family: Arial; font-size: 14px">09:00</text>
+            </g>
+            
+            <!-- 알림 요일 -->
+            <g transform="translate(0,140)">
+                <rect width="280" height="180" rx="15" fill="#f8f9fa" stroke="#E0E0E0" />
+                <text x="15" y="45" style="font-family: Arial; font-size: 15px">알림 요일</text>
+                <g transform="translate(15,70)">
+                    <circle cx="20" cy="20" r="20" fill="#7F7FD5" />
+                    <text x="13" y="25" fill="white" style="font-family: Arial; font-size: 12px">월</text>
+                    
+                    <circle cx="65" cy="20" r="20" fill="#7F7FD5" />
+                    <text x="58" y="25" fill="white" style="font-family: Arial; font-size: 12px">화</text>
+                    
+                    <circle cx="110" cy="20" r="20" fill="#7F7FD5" />
+                    <text x="103" y="25" fill="white" style="font-family: Arial; font-size: 12px">수</text>
+                    
+                    <circle cx="155" cy="20" r="20" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="148" y="25" fill="#7F7FD5" style="font-family: Arial; font-size: 12px">목</text>
+                    
+                    <circle cx="200" cy="20" r="20" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="193" y="25" fill="#7F7FD5" style="font-family: Arial; font-size: 12px">금</text>
+                    
+                    <circle cx="20" cy="80" r="20" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="13" y="85" fill="#7F7FD5" style="font-family: Arial; font-size: 12px">토</text>
+                    
+                    <circle cx="65" cy="80" r="20" fill="#f0f4ff" stroke="#7F7FD5" />
+                    <text x="58" y="85" fill="#7F7FD5" style="font-family: Arial; font-size: 12px">일</text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg> 
