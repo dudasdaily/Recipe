@@ -1,1 +1,0 @@
-export type Category = 'ALL' | 'VEGETABLE' | 'FRUIT' | 'MEAT' | 'SEAFOOD' | 'DAIRY' | 'GRAIN' | 'SAUCE' | 'OTHER'; 

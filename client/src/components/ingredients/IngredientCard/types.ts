@@ -1,7 +1,5 @@
-import type { Ingredient } from '@/types/ingredient';
+import type { Ingredient } from '@/types/api';
 
 export type IngredientCardProps = {
   ingredient: Ingredient;
-  onPress?: () => void;
-  onDelete?: () => void;
 }; 

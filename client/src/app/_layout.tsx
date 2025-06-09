@@ -1,41 +1,52 @@
-import { useCallback } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import * as React from 'react';
+import * as RN from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Slot, useRouter, usePathname } from 'expo-router';
-import { View } from 'react-native';
-import { TabBar } from '@/components/common/TabBar';
-import { useNavigationStore } from '@/stores/navigation';
+import Toast from 'react-native-toast-message';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const ROUTES = [
-  { name: '/', label: '홈', icon: 'home' },
-  { name: '/add', label: '추가', icon: 'plus-square' },
-  { name: '/settings', label: '설정', icon: 'settings' },
-] as const;
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const isTabBarEnabled = useNavigationStore((state) => state.isTabBarEnabled);
+  const [isReady, setIsReady] = React.useState(false);
 
-  const handleRouteChange = useCallback((routeName: string) => {
-    router.push(routeName);
-  }, [router]);
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setIsReady(true);
+      } catch (error) {
+        console.error('App initialization failed:', error);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  if (!isReady) {
+    return (
+      <RN.View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <RN.ActivityIndicator size="large" />
+      </RN.View>
+    );
+  }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="auto" />
-      <View style={{ flex: 1 }}>
-        <View style={{ flex: 1 }}>
-          <Slot />
-        </View>
-        <TabBar
-          routes={ROUTES}
-          currentRoute={pathname}
-          onChangeRoute={handleRouteChange}
-          isEnabled={isTabBarEnabled}
-        />
-      </View>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <StatusBar style="auto" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          />
+          <Toast />
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 } 

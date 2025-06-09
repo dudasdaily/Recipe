@@ -1,1 +1,0 @@
-export { ModeTransitionModal } from './Component'; 
