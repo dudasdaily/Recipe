@@ -6,7 +6,7 @@
 주요 기능으로는 식재료 관리, 영수증/식재료 이미지 인식을 통한 자동 등록, 개별 식재료 유통기한 알림 등이 있습니다.
 
 ### 기술 스택
-- React Native / Expo
+- React Native / Expo SDK 53버전 이상
 - TypeScript
 - Zustand (상태 관리)
 - React Query (서버 상태 관리)
