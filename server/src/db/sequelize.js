@@ -8,8 +8,13 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: 'mysql',
-    logging: false, // 로깅을 비활성화하려면 false로 설정
-    timezone: '+09:00', // 한국 시간대 설정
+    logging: false,
+    pool : {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
   }
 );
 
