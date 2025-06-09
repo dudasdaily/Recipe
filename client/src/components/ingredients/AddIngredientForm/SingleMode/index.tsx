@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, TextInput, StyleSheet, ScrollView } from 'react-native';
+import { View, TextInput, StyleSheet, ScrollView, Text } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
+import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { Button } from '@/components/common/Button';
 import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
@@ -61,12 +62,14 @@ export function SingleModeForm() {
           value={formData.name}
           onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="카테고리"
-          value={formData.category}
-          onChangeText={(text) => setFormData((prev) => ({ ...prev, category: text }))}
-        />
+        <View>
+          <Text style={styles.label}>카테고리</Text>
+          <CategorySelector
+            value={formData.category}
+            onChange={(category) => setFormData((prev) => ({ ...prev, category }))}
+            style={{ marginBottom: 4 }}
+          />
+        </View>
         <StorageTypeSelector
           value={formData.storage_type}
           onChange={(type) => setFormData((prev) => ({ ...prev, storage_type: type }))}
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: 16,
-    gap: 16,
+    gap: 20,
   },
   input: {
     borderWidth: 1,
@@ -108,6 +111,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    marginBottom: 2,
+  },
+  label: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 6,
+    marginLeft: 2,
+    fontWeight: '500',
   },
   button: {
     marginTop: 8,

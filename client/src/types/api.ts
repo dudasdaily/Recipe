@@ -10,6 +10,8 @@ export type Ingredient = {
   quantity: number;
   storage_type: 'ROOM_TEMP' | 'REFRIGERATED' | 'FROZEN';
   expiry_date: string;
+  category: string;
+  default_expiry_days: number;
   created_at: string;
   updated_at: string;
 };
