@@ -2,12 +2,15 @@ const { Ingredient } = require('../models');
 
 // 응답 데이터 가공을 위한 유틸리티 함수
 const formatIngredient = (ingredient) => {
-  const { 
-    id, 
-    name, 
-    category, 
-    storage_type, 
+  const {
+    id,
+    name,
+    category,
+    storage_type,
+    quantity,
+    expiry_date,
     default_expiry_days,
+    user_id,
     created_at,
     updated_at
   } = ingredient.toJSON();
@@ -17,7 +20,10 @@ const formatIngredient = (ingredient) => {
     name,
     category,
     storage_type,
+    quantity,
+    expiry_date,
     default_expiry_days,
+    user_id,
     created_at,
     updated_at
   };

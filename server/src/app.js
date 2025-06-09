@@ -62,7 +62,7 @@ async function startServer() {
     // 알림 스케줄러 시작
     NotificationScheduler.start();
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {

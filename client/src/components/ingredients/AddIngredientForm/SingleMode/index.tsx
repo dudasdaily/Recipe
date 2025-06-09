@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, StyleSheet, ScrollView, Text } from 'react-native';
+import { View, TextInput, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateIngredientMutation } from '@/hooks/query/useIngredients';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
@@ -17,6 +17,8 @@ const initialFormData: FormData = {
   category: '',
   storage_type: 'ROOM_TEMP',
   default_expiry_days: 7,
+  quantity: 1,
+  expiry_date: '',
 };
 
 export function SingleModeForm() {
@@ -88,6 +90,35 @@ export function SingleModeForm() {
           onChange={(date) => setFormData((prev) => ({ ...prev, expiry_date: date }))}
           placeholder="유통기한 선택"
         />
+        <View style={styles.quantityRow}>
+          <Text style={styles.label}>수량</Text>
+          <View style={styles.quantityControl}>
+            <TouchableOpacity
+              onPress={() => setFormData(prev => ({ ...prev, quantity: Math.max(1, (prev.quantity ?? 1) - 1) }))}
+              style={styles.quantityBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quantityBtnText}>-</Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.quantityInput}
+              keyboardType="number-pad"
+              value={String(formData.quantity ?? 1)}
+              onChangeText={text => {
+                const num = Math.max(1, parseInt(text.replace(/[^0-9]/g, ''), 10) || 1);
+                setFormData(prev => ({ ...prev, quantity: num }));
+              }}
+              maxLength={3}
+            />
+            <TouchableOpacity
+              onPress={() => setFormData(prev => ({ ...prev, quantity: (prev.quantity ?? 1) + 1 }))}
+              style={styles.quantityBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quantityBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
         <Button
           title="재료 추가"
           onPress={handleSubmit}
@@ -126,5 +157,48 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 8,
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 8,
+  },
+  quantityBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f5f6fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quantityBtnText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    lineHeight: 24,
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 16,
+    width: 48,
+    height: 36,
+    textAlign: 'center',
+    marginHorizontal: 8,
+    backgroundColor: '#fff',
   },
 }); 
