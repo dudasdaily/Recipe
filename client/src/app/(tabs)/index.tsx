@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useState, useMemo, useRef } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useIngredientsQuery } from '@/hooks/query/useIngredients';
+import { useIngredientsQuery, useDeleteIngredientMutation } from '@/hooks/query/useIngredients';
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
 import { SearchBar } from '@/components/ingredients/SearchBar';
 import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
+import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm';
+import { Ionicons } from '@expo/vector-icons';
 
 const EXPIRY_THRESHOLD_DAYS = 7;
 const STORAGE_TYPES = [
@@ -20,8 +22,12 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStorage, setSelectedStorage] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [editIngredient, setEditIngredient] = useState<Ingredient | null>(null);
   
   const { data, isLoading } = useIngredientsQuery();
+  const { mutate: deleteMutate } = useDeleteIngredientMutation();
   const ingredients = data || [];
 
   const filteredIngredients = useMemo(() => {
@@ -44,6 +50,55 @@ export default function HomeScreen() {
       new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
     );
   }, [ingredients]);
+
+  // 체크박스 토글
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(_id => _id !== id) : [...prev, id]);
+  };
+  // 전체 선택/해제
+  const handleSelectAll = () => {
+    setIsSelectionMode(true);
+    setSelectedIds(filteredIngredients.map(i => i.id));
+  };
+  const allSelected = filteredIngredients.length > 0 && filteredIngredients.every(i => selectedIds.includes(i.id));
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds([]);
+    } else {
+      handleSelectAll();
+    }
+  };
+  // 일괄 삭제
+  const handleBulkDelete = async () => {
+    await Promise.all(selectedIds.map(id => new Promise<void>((resolve) => {
+      deleteMutate(id, { onSuccess: resolve });
+    })));
+    setSelectedIds([]);
+    setIsSelectionMode(false);
+  };
+
+  const handleLongPress = (id: number) => {
+    setIsSelectionMode(true);
+    setSelectedIds([id]);
+  };
+  const handlePress = (id: number) => {
+    if (isSelectionMode) {
+      setSelectedIds(prev =>
+        prev.includes(id) ? prev.filter(_id => _id !== id) : [...prev, id]
+      );
+    } else {
+      // 기존 상세/수정 등 동작 (onEdit 등)
+    }
+  };
+  const handleDragSelect = (id: number) => {
+    if (isSelectionMode && !selectedIds.includes(id)) {
+      setSelectedIds(prev => [...prev, id]);
+    }
+  };
+  const handleCancelSelection = () => {
+    setIsSelectionMode(false);
+    setSelectedIds([]);
+  };
 
   if (isLoading) {
     return (
@@ -103,6 +158,41 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         </View>
+        {/* 선택 모드 UI */}
+        {isSelectionMode && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, backgroundColor: '#f7f7fa' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>선택됨: {selectedIds.length}개</Text>
+            <TouchableOpacity onPress={handleCancelSelection} style={{ marginLeft: 12 }}>
+              <Ionicons name="close" size={22} color="#888" />
+              <Text style={{ marginLeft: 4, fontSize: 15 }}>취소</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBulkDelete}
+              disabled={selectedIds.length === 0}
+              style={{ marginLeft: 16, opacity: selectedIds.length === 0 ? 0.5 : 1 }}
+            >
+              <Ionicons name="trash" size={20} color="#ff3b30" />
+              <Text style={{ color: '#ff3b30', marginLeft: 4, fontSize: 15 }}>선택삭제</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {/* ... 기존 전체선택/선택삭제 UI는 선택 모드가 아닐 때만 노출 ... */}
+        {!isSelectionMode && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 }}>
+            <TouchableOpacity onPress={toggleSelectAll} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name={allSelected ? 'checkbox' : 'square-outline'} size={22} color={allSelected ? '#007AFF' : '#bbb'} />
+              <Text style={{ marginLeft: 6, fontSize: 15 }}>전체선택</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBulkDelete}
+              disabled={selectedIds.length === 0}
+              style={{ marginLeft: 16, opacity: selectedIds.length === 0 ? 0.5 : 1 }}
+            >
+              <Ionicons name="trash" size={20} color="#ff3b30" />
+              <Text style={{ color: '#ff3b30', marginLeft: 4, fontSize: 15 }}>선택삭제</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {filteredIngredients.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>등록된 식재료가 없습니다.</Text>
@@ -111,13 +201,38 @@ export default function HomeScreen() {
       <FlashList
         data={filteredIngredients}
         renderItem={({ item }) => (
-          <IngredientCard ingredient={item} />
+          <IngredientCard
+            ingredient={item}
+            selected={selectedIds.includes(item.id)}
+            selectionMode={isSelectionMode}
+            onPress={() => {
+              if (isSelectionMode) {
+                setSelectedIds(prev =>
+                  prev.includes(item.id)
+                    ? prev.filter(_id => _id !== item.id)
+                    : [...prev, item.id]
+                );
+              } else {
+                setEditIngredient(item);
+              }
+            }}
+            onLongPress={() => handleLongPress(item.id)}
+            onEdit={!isSelectionMode ? setEditIngredient : undefined}
+          />
         )}
         estimatedItemSize={100}
         contentContainerStyle={styles.listContent}
       />
         )}
       </ScrollView>
+      {/* 수정 모달 */}
+      <Modal visible={!!editIngredient} animationType="slide" transparent onRequestClose={() => setEditIngredient(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
+          {editIngredient && (
+            <EditIngredientForm ingredient={editIngredient} onClose={() => setEditIngredient(null)} />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
