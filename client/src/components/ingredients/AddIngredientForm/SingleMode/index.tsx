@@ -7,6 +7,7 @@ import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { Button } from '@/components/common/Button';
 import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
+import { ImageRecognitionActions } from '../ImageRecognitionActions';
 
 type FormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -55,6 +56,11 @@ export function SingleModeForm() {
 
   return (
     <ScrollView style={styles.container}>
+      <ImageRecognitionActions
+        mode="SINGLE"
+        onPressReceipt={() => Toast.show({ type: 'info', text1: '다중 모드에서만 사용 가능합니다.' })}
+        onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+      />
       <View style={styles.form}>
         <TextInput
           style={styles.input}

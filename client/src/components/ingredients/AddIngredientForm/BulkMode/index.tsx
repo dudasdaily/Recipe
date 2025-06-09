@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
@@ -9,6 +9,7 @@ import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
 import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
+import { ImageRecognitionActions } from '../ImageRecognitionActions';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -90,19 +91,20 @@ export function BulkModeForm() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bulkSettingRow}>
-        <Text style={styles.bulkLabel}>일괄 카테고리</Text>
-        <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
-      </View>
-      <View style={styles.bulkSettingRow}>
-        <Text style={styles.bulkLabel}>일괄 보관방법</Text>
-        <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
-      </View>
-      {items.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>추가할 재료가 없습니다. "항목 추가" 버튼을 눌러주세요.</Text>
+      <View style={[styles.flexArea, { minHeight: 200 }]}>
+        <ImageRecognitionActions
+          mode="MULTI"
+          onPressReceipt={() => Toast.show({ type: 'info', text1: '영수증 인식 기능 준비 중' })}
+          onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+        />
+        <View style={styles.bulkSettingRow}>
+          <Text style={styles.bulkLabel}>일괄 카테고리</Text>
+          <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
         </View>
-      ) : (
+        <View style={styles.bulkSettingRow}>
+          <Text style={styles.bulkLabel}>일괄 보관방법</Text>
+          <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
+        </View>
         <DraggableFlatList<BulkFormData>
           data={items}
           renderItem={({ item, drag, isActive }: RenderItemParams<BulkFormData>) => (
@@ -121,23 +123,31 @@ export function BulkModeForm() {
           )}
           keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
           onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
-          contentContainerStyle={styles.list}
-        />
-      )}
-      <View style={styles.footer}>
-        <Button
-          title="항목 추가"
-          onPress={handleAddItem}
-          variant="secondary"
-          style={styles.addButton}
-        />
-        <Button
-          title="모두 추가"
-          onPress={handleSubmit}
-          disabled={isPending}
-          loading={isPending}
+          contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 230 }]}
+          style={{ minHeight: 200, maxHeight: '100%' }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>추가할 재료가 없습니다. "항목 추가" 버튼을 눌러주세요.</Text>
+            </View>
+          }
         />
       </View>
+      <SafeAreaView style={styles.footerArea}>
+        <View style={styles.footer}>
+          <Button
+            title="항목 추가"
+            onPress={handleAddItem}
+            variant="secondary"
+            style={styles.addButton}
+          />
+          <Button
+            title="모두 추가"
+            onPress={handleSubmit}
+            disabled={isPending}
+            loading={isPending}
+          />
+        </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
@@ -146,6 +156,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  flexArea: {
+    flex: 1,
   },
   bulkSettingRow: {
     paddingHorizontal: 16,
@@ -162,6 +175,9 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
     gap: 16,
+  },
+  footerArea: {
+    backgroundColor: '#fff',
   },
   footer: {
     padding: 16,

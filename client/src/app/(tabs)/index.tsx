@@ -20,7 +20,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStorage, setSelectedStorage] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
-
+  
   const { data, isLoading } = useIngredientsQuery();
   const ingredients = data || [];
 
@@ -40,7 +40,7 @@ export default function HomeScreen() {
     return ingredients.filter(ingredient => {
       const expiryDate = new Date(ingredient.expiry_date);
       return expiryDate <= threshold;
-    }).sort((a, b) =>
+    }).sort((a, b) => 
       new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
     );
   }, [ingredients]);
@@ -62,13 +62,13 @@ export default function HomeScreen() {
       >
         <View style={styles.stickyHeader}>
           <View style={styles.searchBarWrapper}>
-            <SearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
           </View>
           <View style={styles.gap8} />
-          <ExpiryAlert ingredients={expiringIngredients} />
+      <ExpiryAlert ingredients={expiringIngredients} />
           <View style={styles.gap8} />
           <View style={styles.filterRow}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
@@ -108,14 +108,14 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>등록된 식재료가 없습니다.</Text>
           </View>
         ) : (
-          <FlashList
-            data={filteredIngredients}
-            renderItem={({ item }) => (
-              <IngredientCard ingredient={item} />
-            )}
-            estimatedItemSize={100}
-            contentContainerStyle={styles.listContent}
-          />
+      <FlashList
+        data={filteredIngredients}
+        renderItem={({ item }) => (
+          <IngredientCard ingredient={item} />
+        )}
+        estimatedItemSize={100}
+        contentContainerStyle={styles.listContent}
+      />
         )}
       </ScrollView>
     </View>
