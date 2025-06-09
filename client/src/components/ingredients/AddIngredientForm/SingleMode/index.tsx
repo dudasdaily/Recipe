@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { View, TextInput, StyleSheet, ScrollView, Text } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/services/api/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCreateIngredientMutation } from '@/hooks/query/useIngredients';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
 import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { Button } from '@/components/common/Button';
 import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
 import { ImageRecognitionActions } from '../ImageRecognitionActions';
+import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
 
 type FormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -21,26 +22,7 @@ const initialFormData: FormData = {
 export function SingleModeForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const queryClient = useQueryClient();
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: (data: FormData) => apiClient.post('/ingredients', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-      Toast.show({
-        type: 'success',
-        text1: '재료 추가 완료',
-        text2: '재료가 성공적으로 추가되었습니다.',
-      });
-      setFormData(initialFormData);
-    },
-    onError: (error: Error) => {
-      Toast.show({
-        type: 'error',
-        text1: '재료 추가 실패',
-        text2: error.message,
-      });
-    },
-  });
+  const { mutate, isPending } = useCreateIngredientMutation();
 
   const handleSubmit = () => {
     if (!formData.name || !formData.category) {
@@ -51,7 +33,28 @@ export function SingleModeForm() {
       });
       return;
     }
-    mutate(formData);
+    // API 파라미터 변환
+    const payload = {
+      ...formData,
+      expiry_date: formData.expiry_date || '',
+    };
+    mutate(payload, {
+      onSuccess: () => {
+        Toast.show({
+          type: 'success',
+          text1: '재료 추가 완료',
+          text2: '재료가 성공적으로 추가되었습니다.',
+        });
+        setFormData(initialFormData);
+      },
+      onError: (error: any) => {
+        Toast.show({
+          type: 'error',
+          text1: '재료 추가 실패',
+          text2: error?.message || '오류가 발생했습니다.',
+        });
+      },
+    });
   };
 
   return (
@@ -80,15 +83,10 @@ export function SingleModeForm() {
           value={formData.storage_type}
           onChange={(type) => setFormData((prev) => ({ ...prev, storage_type: type }))}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="기본 유통기한 (일)"
-          value={String(formData.default_expiry_days)}
-          onChangeText={(text) => {
-            const days = parseInt(text) || 0;
-            setFormData((prev) => ({ ...prev, default_expiry_days: days }));
-          }}
-          keyboardType="numeric"
+        <ExpiryDatePicker
+          value={formData.expiry_date}
+          onChange={(date) => setFormData((prev) => ({ ...prev, expiry_date: date }))}
+          placeholder="유통기한 선택"
         />
         <Button
           title="재료 추가"

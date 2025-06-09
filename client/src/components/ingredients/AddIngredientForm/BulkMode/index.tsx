@@ -30,7 +30,10 @@ export function BulkModeForm() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: BulkFormData[]) =>
-      Promise.all(data.map((item) => apiClient.post('/ingredients', item))),
+      Promise.all(data.map((item) => apiClient.post('/ingredients', {
+        ...item,
+        expiry_date: item.expiry_date || '',
+      }))),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       Toast.show({

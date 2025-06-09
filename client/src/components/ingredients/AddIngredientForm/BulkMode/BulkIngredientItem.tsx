@@ -3,6 +3,7 @@ import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
 import { Ionicons } from '@expo/vector-icons';
 import type { Ingredient } from '@/types/api';
+import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -35,15 +36,11 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag }: Props) 
           value={item.storage_type}
           onChange={(type) => onUpdate({ storage_type: type })}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="기본 유통기한 (일)"
-          value={String(item.default_expiry_days || '')}
-          onChangeText={(text) => {
-            const days = parseInt(text) || 0;
-            onUpdate({ default_expiry_days: days });
-          }}
-          keyboardType="numeric"
+        <ExpiryDatePicker
+          value={item.expiry_date}
+          onChange={(date) => onUpdate({ expiry_date: date })}
+          placeholder="유통기한 선택"
+          style={{ marginBottom: 2 }}
         />
       </View>
       <TouchableOpacity onPress={onRemove} style={styles.removeBtn} hitSlop={8}>
