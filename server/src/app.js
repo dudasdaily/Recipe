@@ -10,8 +10,9 @@ const { sequelize } = require('./models');
 const ingredientRoutes = require('./routes/ingredientRoutes');
 const visionRoutes = require('./routes/visionRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
-const notificationScheduler = require('./services/NotificationScheduler');
+const NotificationScheduler = require('./services/NotificationScheduler');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/v1/ingredients', ingredientRoutes);
 app.use('/api/v1/vision', visionRoutes);
 app.use('/api/v1/ocr', ocrRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 에러 핸들링 미들웨어
 app.use((err, req, res, next) => {
@@ -57,8 +59,8 @@ async function startServer() {
     await sequelize.sync(syncOptions);
     console.log('Database tables synchronized');
 
-    // 서버 시작 시 알림 스케줄러 실행
-    notificationScheduler.start();
+    // 알림 스케줄러 시작
+    NotificationScheduler.start();
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

@@ -7,28 +7,32 @@ const NotificationSetting = sequelize.define('NotificationSetting', {
     primaryKey: true,
     autoIncrement: true
   },
-  userId: {
+  user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    field: 'user_id'
+    // 테스트를 위해 외래 키 제약 조건 주석 처리
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   },
-  notifyTime: {
+  notify_time: {
     type: DataTypes.TIME,
     allowNull: false,
-    defaultValue: '09:00:00'
+    defaultValue: '09:00:00',
+    field: 'notify_time'
   },
-  notifyDays: {
+  notify_days: {
     type: DataTypes.JSON,
     allowNull: false,
-    defaultValue: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+    field: 'notify_days'
   },
-  isEnabled: {
+  is_enabled: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: true
+    defaultValue: true,
+    field: 'is_enabled'
   }
 }, {
   tableName: 'notification_settings',

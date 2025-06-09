@@ -7,17 +7,19 @@ const NotificationHistory = sequelize.define('NotificationHistory', {
     primaryKey: true,
     autoIncrement: true
   },
-  userId: {
+  user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'user_id',
     references: {
       model: 'users',
       key: 'id'
     }
   },
-  notificationType: {
+  notification_type: {
     type: DataTypes.STRING(50),
-    allowNull: false
+    allowNull: false,
+    field: 'notification_type'
   },
   title: {
     type: DataTypes.STRING(255),
@@ -31,20 +33,19 @@ const NotificationHistory = sequelize.define('NotificationHistory', {
     type: DataTypes.JSON,
     allowNull: true
   },
-  sentAt: {
+  sent_at: {
     type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW
+    defaultValue: DataTypes.NOW,
+    field: 'sent_at'
   },
-  readAt: {
+  read_at: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'read_at'
   }
 }, {
   tableName: 'notification_history',
-  timestamps: true,
-  createdAt: 'sent_at',
-  updatedAt: 'updated_at'
+  timestamps: false
 });
 
 module.exports = NotificationHistory; 
