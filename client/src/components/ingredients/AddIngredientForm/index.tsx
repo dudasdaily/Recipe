@@ -1,15 +1,18 @@
-import { useState } from 'react';
 import { View } from 'react-native';
 import { SingleModeForm } from './SingleMode';
 import { BulkModeForm } from './BulkMode';
 
-export default function AddIngredientForm() {
-  const [mode, setMode] = useState<'SINGLE' | 'MULTI'>('SINGLE');
-  const [bulkNames, setBulkNames] = useState<string[]>([]);
-
+export default function AddIngredientForm({
+  mode,
+  bulkNames = [],
+  onModeChange,
+}: {
+  mode: 'SINGLE' | 'MULTI';
+  bulkNames?: string[];
+  onModeChange: (mode: 'SINGLE' | 'MULTI', bulkNames?: string[]) => void;
+}) {
   const handleSwitchToBulkMode = (names: string[]) => {
-    setBulkNames(names);
-    setMode('MULTI');
+    onModeChange('MULTI', names);
   };
 
   return (

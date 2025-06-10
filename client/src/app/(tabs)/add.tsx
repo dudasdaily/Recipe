@@ -1,12 +1,32 @@
-import { View, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { SegmentedControl } from '@/components/common/SegmentedControl';
 import AddIngredientForm from '@/components/ingredients/AddIngredientForm';
 
 export default function AddScreen() {
+  const [mode, setMode] = useState<'SINGLE' | 'MULTI'>('SINGLE');
+  const [bulkNames, setBulkNames] = useState<string[]>([]);
+
+  const handleModeChange = (newMode: 'SINGLE' | 'MULTI', names?: string[]) => {
+    setMode(newMode);
+    setBulkNames(names ?? []);
+  };
+
   return (
-    <View style={styles.container}>
-      {/* SegmentedControl 등 모드 전환 UI는 AddIngredientForm 내부에서 처리됨 */}
-      <AddIngredientForm />
-    </View>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SegmentedControl
+        values={['단일 추가', '다중 추가']}
+        selectedIndex={mode === 'SINGLE' ? 0 : 1}
+        onChange={(index) => handleModeChange(index === 0 ? 'SINGLE' : 'MULTI')}
+        style={styles.segmentedControl}
+      />
+      <AddIngredientForm
+        mode={mode}
+        bulkNames={bulkNames}
+        onModeChange={handleModeChange}
+      />
+    </SafeAreaView>
   );
 }
 
