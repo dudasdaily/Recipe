@@ -1,7 +1,6 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
-// export const API_BASE_URL = 'http://localhost:3000/api/v1';
-export const API_BASE_URL = 'http://192.168.0.3:3000/api/v1'; // 서버의 ip주소:포트/api/v1
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1'; // 서버의 ip주소:포트/api/v1
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -18,7 +17,7 @@ apiClient.interceptors.response.use(
     if (error.response) {
       return Promise.reject({
         status: error.response.status,
-        message: error.response.data?.message || '알 수 없는 오류가 발생했습니다.',
+        message: (error.response.data as any)?.message || '알 수 없는 오류가 발생했습니다.',
       });
     }
     

@@ -1,4 +1,4 @@
-ㅊconst { Ingredient } = require('../models');
+const { Ingredient } = require('../models');
 
 // 응답 데이터 가공을 위한 유틸리티 함수
 const formatIngredient = (ingredient) => {

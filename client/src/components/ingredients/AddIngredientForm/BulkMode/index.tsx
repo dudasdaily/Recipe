@@ -10,6 +10,7 @@ import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelecto
 import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
 import { ImageRecognitionActions } from '../ImageRecognitionActions';
+import { analyzeIngredientImage } from '@/services/api/vision';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -22,8 +23,12 @@ const initialItem: BulkFormData = {
   expiry_date: '',
 };
 
-export function BulkModeForm() {
-  const [items, setItems] = useState<BulkFormData[]>([initialItem]);
+export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] }) {
+  const [items, setItems] = useState<BulkFormData[]>(
+    initialNames.length > 0
+      ? initialNames.map(name => ({ ...initialItem, name }))
+      : [initialItem]
+  );
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
   const queryClient = useQueryClient();
@@ -89,6 +94,22 @@ export function BulkModeForm() {
     mutate(validItems);
   };
 
+  const handleImagePicked = async (uri: string) => {
+    try {
+      const result = await analyzeIngredientImage(uri);
+      if (!result.success || !result.data.ingredients || result.data.ingredients.length === 0) {
+        Toast.show({ type: 'error', text1: '식재료 인식 실패', text2: result.message || '식재료를 찾을 수 없습니다.' });
+        return;
+      }
+      const names = result.data.ingredients.map((item: any) => item.name);
+      if (names.length > 0) {
+        setItems(names.map((name: string) => ({ ...initialItem, name })));
+      }
+    } catch (e: any) {
+      Toast.show({ type: 'error', text1: '이미지 분석 오류', text2: e.message });
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -99,6 +120,7 @@ export function BulkModeForm() {
           mode="MULTI"
           onPressReceipt={() => Toast.show({ type: 'info', text1: '영수증 인식 기능 준비 중' })}
           onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+          onImagePicked={handleImagePicked}
         />
         <View style={styles.bulkSettingRow}>
           <Text style={styles.bulkLabel}>일괄 카테고리</Text>

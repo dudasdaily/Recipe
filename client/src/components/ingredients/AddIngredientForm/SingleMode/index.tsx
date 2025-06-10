@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, ScrollView, Text, TouchableOpacity, Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateIngredientMutation } from '@/hooks/query/useIngredients';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
 import { ImageRecognitionActions } from '../ImageRecognitionActions';
 import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
+import { analyzeIngredientImage } from '@/services/api/vision';
 
 type FormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -21,7 +22,7 @@ const initialFormData: FormData = {
   expiry_date: '',
 };
 
-export function SingleModeForm() {
+export function SingleModeForm({ onSwitchToBulkMode }: { onSwitchToBulkMode?: (names: string[]) => void }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const queryClient = useQueryClient();
   const { mutate, isPending } = useCreateIngredientMutation();
@@ -59,12 +60,40 @@ export function SingleModeForm() {
     });
   };
 
+  // 이미지 인식 결과 처리
+  const handleImagePicked = async (uri: string) => {
+    try {
+      const result = await analyzeIngredientImage(uri);
+      if (!result.success || !result.data.ingredients || result.data.ingredients.length === 0) {
+        Toast.show({ type: 'error', text1: '식재료 인식 실패', text2: result.message || '식재료를 찾을 수 없습니다.' });
+        return;
+      }
+      const names = result.data.ingredients.map((item: any) => item.name);
+      if (names.length === 1) {
+        setFormData((prev) => ({ ...prev, name: names[0] }));
+      } else if (names.length > 1) {
+        Alert.alert(
+          '여러 재료가 인식되었습니다',
+          `다중 모드로 전환하여 모두 추가하거나, 첫 번째 재료만 추가할 수 있습니다.\n\n[${names.join(', ')}]`,
+          [
+            { text: '첫 번째만 추가', onPress: () => setFormData((prev) => ({ ...prev, name: names[0] })) },
+            { text: '다중 모드로 전환', onPress: () => onSwitchToBulkMode?.(names) },
+            { text: '취소', style: 'cancel' },
+          ]
+        );
+      }
+    } catch (e: any) {
+      Toast.show({ type: 'error', text1: '이미지 분석 오류', text2: e.message });
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <ImageRecognitionActions
         mode="SINGLE"
         onPressReceipt={() => Toast.show({ type: 'info', text1: '다중 모드에서만 사용 가능합니다.' })}
         onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+        onImagePicked={handleImagePicked}
       />
       <View style={styles.form}>
         <TextInput

@@ -7,6 +7,7 @@ type ButtonProps = {
   loading?: boolean;
   variant?: 'primary' | 'secondary';
   style?: ViewStyle;
+  children?: React.ReactNode;
 };
 
 export function Button({
@@ -16,6 +17,7 @@ export function Button({
   loading = false,
   variant = 'primary',
   style,
+  children,
 }: ButtonProps) {
   return (
     <TouchableOpacity
@@ -31,15 +33,19 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? '#fff' : '#000'} />
       ) : (
-        <Text
-          style={[
-            styles.text,
-            variant === 'primary' ? styles.primaryText : styles.secondaryText,
-            disabled && styles.disabledText,
-          ]}
-        >
-          {title}
-        </Text>
+        children ? (
+          children
+        ) : (
+          <Text
+            style={[
+              styles.text,
+              variant === 'primary' ? styles.primaryText : styles.secondaryText,
+              disabled && styles.disabledText,
+            ]}
+          >
+            {title}
+          </Text>
+        )
       )}
     </TouchableOpacity>
   );
