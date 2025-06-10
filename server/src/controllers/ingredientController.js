@@ -1,4 +1,4 @@
-const { Ingredient } = require('../models');
+ㅊconst { Ingredient } = require('../models');
 
 // 응답 데이터 가공을 위한 유틸리티 함수
 const formatIngredient = (ingredient) => {
@@ -49,7 +49,19 @@ exports.getIngredients = async (req, res) => {
 
 exports.createIngredient = async (req, res) => {
   try {
-    const ingredient = await Ingredient.create(req.body);
+    // 유통기한 처리
+    let data = { ...req.body };
+    if (
+      !data.expiry_date ||
+      typeof data.expiry_date !== 'string' ||
+      data.expiry_date.trim() === '' ||
+      data.expiry_date === 'Invalid date' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(data.expiry_date) ||
+      isNaN(Date.parse(data.expiry_date))
+    ) {
+      data.expiry_date = null;
+    }
+    const ingredient = await Ingredient.create(data);
     res.status(201).json({
       success: true,
       data: formatIngredient(ingredient)

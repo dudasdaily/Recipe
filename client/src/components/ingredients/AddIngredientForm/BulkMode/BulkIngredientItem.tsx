@@ -1,4 +1,4 @@
-import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,18 +20,20 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag }: Props) 
       <TouchableOpacity onLongPress={onDrag} style={styles.dragHandle}>
         <Ionicons name="reorder-three" size={22} color="#bbb" />
       </TouchableOpacity>
-      <View style={styles.fields}>
+      <View style={[styles.fields, { overflow: 'visible' }]}>
         <TextInput
           style={styles.input}
           placeholder="재료명"
           value={item.name}
           onChangeText={(text) => onUpdate({ name: text })}
         />
-        <CategorySelector
-          value={item.category}
-          onChange={(category) => onUpdate({ category })}
-          style={{ marginBottom: 4 }}
-        />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+          <CategorySelector
+            value={item.category}
+            onChange={(category) => onUpdate({ category })}
+            style={{ marginBottom: 0 }}
+          />
+        </ScrollView>
         <StorageTypeSelector
           value={item.storage_type}
           onChange={(type) => onUpdate({ storage_type: type })}

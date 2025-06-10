@@ -9,6 +9,8 @@ export const getIngredients = async (): Promise<Ingredient[]> => {
 
 // 재료 생성
 export const createIngredient = async (ingredient: Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>): Promise<Ingredient> => {
+  // 요청 정보 로그
+  console.log('[재료 추가 요청] URL: /ingredients, payload:', ingredient);
   const res = await apiClient.post('/ingredients', ingredient);
   return res.data;
 };

@@ -35,7 +35,7 @@ export function SingleModeForm() {
       });
       return;
     }
-    // API 파라미터 변환
+    // expiry_date가 undefined, null, '' 모두 허용
     const payload = {
       ...formData,
       expiry_date: formData.expiry_date || '',

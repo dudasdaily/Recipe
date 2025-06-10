@@ -50,6 +50,12 @@ export const IngredientCard = ({
     alignItems: 'center' as const,
   };
 
+  const expiryLabel = !ingredient.expiry_date
+    ? '없음'
+    : isNaN(new Date(ingredient.expiry_date).getTime())
+      ? '없음'
+      : new Date(ingredient.expiry_date).toLocaleDateString();
+
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
       {selectionMode && (
@@ -96,7 +102,7 @@ export const IngredientCard = ({
           <Title compact={compact}>{ingredient.name}</Title>
           <InfoText compact={compact}>수량: {ingredient.quantity}</InfoText>
           <InfoText compact={compact}>보관 방법: {storageTypeLabel}</InfoText>
-          <InfoText compact={compact}>유통기한: {new Date(ingredient.expiry_date).toLocaleDateString()}</InfoText>
+          <InfoText compact={compact}>유통기한: {expiryLabel}</InfoText>
         </TouchableOpacity>
       </View>
     </Animated.View>

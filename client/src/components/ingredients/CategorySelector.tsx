@@ -13,11 +13,15 @@ type CategorySelectorProps = {
 
 export function CategorySelector({ value, onChange, categories = DEFAULT_CATEGORIES, style }: CategorySelectorProps) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.row, style]}>
-      {categories.map((category) => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.row, { minWidth: '100%' }, style]}>
+      {categories.map((category, idx) => (
         <TouchableOpacity
           key={category}
-          style={[styles.button, value === category && styles.buttonSelected]}
+          style={[
+            styles.button,
+            value === category && styles.buttonSelected,
+            idx === categories.length - 1 && { marginRight: 0 },
+          ]}
           onPress={() => onChange(category)}
           activeOpacity={0.85}
         >
