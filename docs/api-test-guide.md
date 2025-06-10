@@ -29,7 +29,10 @@ Body: 없음
             "name": "당근",
             "category": "채소",
             "storage_type": "REFRIGERATED",
+            "quantity": 3,
+            "expiry_date": "2025-06-10",
             "default_expiry_days": 7,
+            "user_id": 1,
             "created_at": "2025-06-06T15:05:55.000Z",
             "updated_at": "2025-06-06T15:05:55.000Z"
         }
@@ -66,7 +69,10 @@ Body (raw JSON):
         "name": "당근",
         "category": "채소",
         "storage_type": "REFRIGERATED",
+        "quantity": 3,
+        "expiry_date": "2025-06-10",
         "default_expiry_days": 7,
+        "user_id": 1,
         "created_at": "2024-03-19T12:00:00.000Z",
         "updated_at": "2024-03-19T12:00:00.000Z"
     }
@@ -91,7 +97,10 @@ Body: 없음
         "name": "당근",
         "category": "채소",
         "storage_type": "REFRIGERATED",
+        "quantity": 3,
+        "expiry_date": "2025-06-10",
         "default_expiry_days": 7,
+        "user_id": 1,
         "created_at": "2024-03-19T12:00:00.000Z",
         "updated_at": "2024-03-19T12:00:00.000Z"
     }
@@ -123,7 +132,10 @@ Body (raw JSON):
         "name": "당근",
         "category": "채소",
         "storage_type": "REFRIGERATED",
+        "quantity": 3,
+        "expiry_date": "2025-06-10",
         "default_expiry_days": 7,
+        "user_id": 1,
         "created_at": "2024-03-19T12:00:00.000Z",
         "updated_at": "2024-03-19T12:30:00.000Z"
     }

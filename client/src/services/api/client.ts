@@ -1,7 +1,7 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // export const API_BASE_URL = 'http://localhost:3000/api/v1';
-export const API_BASE_URL = 'http://10.10.3.67:3000/api/v1'; // 서버의 ip주소:포트/api/v1
+export const API_BASE_URL = 'http://172.17.96.1:3000/api/v1'; // 서버의 ip주소:포트/api/v1
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

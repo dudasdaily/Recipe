@@ -13,7 +13,7 @@ class OCRController {
             if (!req.file && !req.body.image) {
                 return res.status(400).json({
                     success: false,
-                    error: '이미지가 제공되지 않았습니다.'
+                    message: '이미지가 제공되지 않았습니다.'
                 });
             }
 
@@ -74,7 +74,7 @@ class OCRController {
             console.error('영수증 처리 중 오류:', error);
             return res.status(500).json({
                 success: false,
-                error: '영수증 처리 중 오류가 발생했습니다.'
+                message: '영수증 처리 중 오류가 발생했습니다.'
             });
         }
     }
@@ -97,7 +97,7 @@ class OCRController {
             if (!receipt) {
                 return res.status(404).json({
                     success: false,
-                    error: '영수증을 찾을 수 없습니다.'
+                    message: '영수증을 찾을 수 없습니다.'
                 });
             }
 
@@ -110,7 +110,7 @@ class OCRController {
             console.error('영수증 조회 중 오류:', error);
             return res.status(500).json({
                 success: false,
-                error: '영수증 조회 중 오류가 발생했습니다.'
+                message: '영수증 조회 중 오류가 발생했습니다.'
             });
         }
     }
