@@ -1,5 +1,5 @@
 const ocrService = require('../services/ocrService');
-const { Receipt, ReceiptItem, sequelize } = require('../models');
+const { Receipt, ReceiptItem, User, sequelize } = require('../models');
 
 /**
  * 영수증 OCR 컨트롤러
@@ -28,40 +28,91 @@ class OCRController {
             // 데이터베이스에 저장
             const receiptData = result.data;
             
+            console.log('[OCR Controller] 받은 데이터:', {
+                storeName: receiptData.storeName,
+                purchaseDate: receiptData.purchaseDate,
+                totalAmount: receiptData.totalAmount,
+                itemsCount: receiptData.items?.length || 0,
+                ingredientCount: receiptData.ingredientCount || 0
+            });
+
+            // 식재료가 하나도 감지되지 않은 경우 데이터베이스에 저장하지 않음
+            if (!receiptData.items || receiptData.items.length === 0) {
+                return res.json({
+                    success: true,
+                    message: '영수증에서 식재료를 찾을 수 없습니다. 다시 촬영해보세요.',
+                    data: {
+                        receipt: null,
+                        items: [],
+                        summary: {
+                            totalItems: receiptData.originalItemCount || 0,
+                            ingredientItems: 0,
+                            filteredOut: receiptData.originalItemCount || 0
+                        }
+                    }
+                });
+            }
+            
             // 트랜잭션 시작
             const transaction = await sequelize.transaction();
 
             try {
-                // 영수증 정보 저장
+                // 기본 사용자가 없으면 생성
+                let defaultUser = await User.findByPk(1);
+                if (!defaultUser) {
+                    defaultUser = await User.create({
+                        id: 1,
+                        email: 'default@recipe.app',
+                        password: 'default123',
+                        name: '기본 사용자'
+                    }, { transaction });
+                    console.log('기본 사용자가 생성되었습니다.');
+                }
+
+                // 영수증 정보 저장 - 기본 사용자 ID 1 사용
                 const receipt = await Receipt.create({
-                    storeName: receiptData.storeName,
-                    purchaseDate: receiptData.purchaseDate,
-                    totalAmount: receiptData.totalAmount,
-                    imageUrl: req.file?.path || null,
-                    userId: req.user?.id || null // 사용자 ID가 있는 경우에만 저장
+                    store_name: receiptData.storeName || '미확인',
+                    purchase_date: receiptData.purchaseDate || new Date(),
+                    total_amount: receiptData.totalAmount || 0,
+                    receipt_image_url: req.file?.path || null,
+                    user_id: 1 // 기본 사용자 ID 사용
                 }, { transaction });
 
-                // 영수증 항목들 저장
+                // 영수증 항목들 저장 - snake_case 필드명 사용
                 const receiptItems = await Promise.all(
                     receiptData.items.map(item => 
                         ReceiptItem.create({
-                            receiptId: receipt.id,
+                            receipt_id: receipt.id,
+                            ingredient_id: null, // 나중에 실제 재료로 매핑할 때 설정
                             name: item.name,
-                            quantity: item.quantity,
-                            unit: item.unit,
-                            price: item.price
+                            quantity: item.quantity || 1,
+                            unit: item.unit || '개',
+                            price: item.price || 0
                         }, { transaction })
                     )
                 );
 
                 await transaction.commit();
 
+                // 필터링 결과에 따른 메시지 생성
+                let message = '영수증이 성공적으로 처리되었습니다.';
+                if (receiptData.originalItemCount > receiptData.ingredientCount) {
+                    message += ` 전체 ${receiptData.originalItemCount}개 상품 중 ${receiptData.ingredientCount}개의 식재료가 감지되었습니다.`;
+                } else {
+                    message += ` ${receiptData.ingredientCount}개의 식재료가 감지되었습니다.`;
+                }
+
                 return res.json({
                     success: true,
-                    message: '영수증이 성공적으로 처리되었습니다.',
+                    message,
                     data: {
                         receipt,
-                        items: receiptItems
+                        items: receiptItems,
+                        summary: {
+                            totalItems: receiptData.originalItemCount,
+                            ingredientItems: receiptData.ingredientCount,
+                            filteredOut: receiptData.originalItemCount - receiptData.ingredientCount
+                        }
                     }
                 });
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
 import type { Ingredient } from '@/types/api';
-import { useUpdateIngredientMutation, useDeleteIngredientMutation } from '@/hooks/query/useIngredients';
+import { useUpdateIngredient, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { Button } from '@/components/common/Button';
 import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
@@ -16,8 +16,8 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
     expiry_date: ingredient.expiry_date,
     default_expiry_days: ingredient.default_expiry_days,
   });
-  const { mutate: updateMutate, isPending: isUpdating } = useUpdateIngredientMutation();
-  const { mutate: deleteMutate, isPending: isDeleting } = useDeleteIngredientMutation();
+  const { mutate: updateMutate, isPending: isUpdating } = useUpdateIngredient();
+  const { mutate: deleteMutate, isPending: isDeleting } = useDeleteIngredient();
 
   const handleSave = () => {
     updateMutate({ id: ingredient.id, ingredient: formData }, { onSuccess: onClose });

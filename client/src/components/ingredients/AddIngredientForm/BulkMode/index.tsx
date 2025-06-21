@@ -11,6 +11,8 @@ import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
 import { ImageRecognitionActions } from '../ImageRecognitionActions';
 import { analyzeIngredientImage } from '@/services/api/vision';
+import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
+import { useReceiptStore } from '@/stores/receipt';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -31,7 +33,11 @@ export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] })
   );
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
+  const [showReceiptFlow, setShowReceiptFlow] = useState(false);
   const queryClient = useQueryClient();
+
+  // 영수증 스토어에서 편집된 아이템들 가져오기
+  const { editableItems, resetState } = useReceiptStore();
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: BulkFormData[]) =>
@@ -110,70 +116,115 @@ export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] })
     }
   };
 
+  // 영수증 스캔 시작
+  const handleReceiptScan = () => {
+    setShowReceiptFlow(true);
+  };
+
+  // 영수증 스캔 완료 처리
+  const handleReceiptComplete = () => {
+    // 영수증에서 인식된 재료들을 현재 아이템 목록에 추가
+    if (editableItems.length > 0) {
+      const newItems = editableItems.map(item => ({
+        name: item.name,
+        category: bulkCategory || '기타',
+        storage_type: (bulkStorage as BulkFormData['storage_type']) || 'REFRIGERATED',
+        default_expiry_days: 7,
+        quantity: item.quantity,
+        expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      }));
+      
+      setItems(prev => [...prev.filter(item => item.name), ...newItems]);
+      
+      Toast.show({
+        type: 'success',
+        text1: '영수증 처리 완료',
+        text2: `${newItems.length}개의 재료가 추가되었습니다.`,
+      });
+    }
+    
+    setShowReceiptFlow(false);
+  };
+
+  // 영수증 스캔 취소
+  const handleReceiptCancel = () => {
+    setShowReceiptFlow(false);
+    resetState();
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={[styles.flexArea, { minHeight: 200 }]}>
-        <ImageRecognitionActions
-          mode="MULTI"
-          onPressReceipt={() => Toast.show({ type: 'info', text1: '영수증 인식 기능 준비 중' })}
-          onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
-          onImagePicked={handleImagePicked}
-        />
-        <View style={styles.bulkSettingRow}>
-          <Text style={styles.bulkLabel}>일괄 카테고리</Text>
-          <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
+    <>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={[styles.flexArea, { minHeight: 200 }]}>
+          <ImageRecognitionActions
+            mode="MULTI"
+            onPressReceipt={handleReceiptScan}
+            onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+            onImagePicked={handleImagePicked}
+          />
+          <View style={styles.bulkSettingRow}>
+            <Text style={styles.bulkLabel}>일괄 카테고리</Text>
+            <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
+          </View>
+          <View style={styles.bulkSettingRow}>
+            <Text style={styles.bulkLabel}>일괄 보관방법</Text>
+            <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
+          </View>
+          <DraggableFlatList<BulkFormData>
+            data={items}
+            renderItem={({ item, drag, isActive }: RenderItemParams<BulkFormData>) => (
+              <BulkIngredientItem
+                item={item}
+                onUpdate={(data) => {
+                  const idx = items.findIndex((i) => i === item);
+                  handleUpdateItem(idx, data);
+                }}
+                onRemove={() => {
+                  const idx = items.findIndex((i) => i === item);
+                  handleRemoveItem(idx);
+                }}
+                onDrag={drag}
+              />
+            )}
+            keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
+            onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
+            contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 230 }]}
+            style={{ minHeight: 200, maxHeight: '100%' }}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>추가할 재료가 없습니다. "항목 추가" 버튼을 눌러주세요.</Text>
+              </View>
+            }
+          />
         </View>
-        <View style={styles.bulkSettingRow}>
-          <Text style={styles.bulkLabel}>일괄 보관방법</Text>
-          <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
-        </View>
-        <DraggableFlatList<BulkFormData>
-          data={items}
-          renderItem={({ item, drag, isActive }: RenderItemParams<BulkFormData>) => (
-            <BulkIngredientItem
-              item={item}
-              onUpdate={(data) => {
-                const idx = items.findIndex((i) => i === item);
-                handleUpdateItem(idx, data);
-              }}
-              onRemove={() => {
-                const idx = items.findIndex((i) => i === item);
-                handleRemoveItem(idx);
-              }}
-              onDrag={drag}
+        <SafeAreaView style={styles.footerArea}>
+          <View style={styles.footer}>
+            <Button
+              title="항목 추가"
+              onPress={handleAddItem}
+              variant="secondary"
+              style={styles.addButton}
             />
-          )}
-          keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
-          onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
-          contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 230 }]}
-          style={{ minHeight: 200, maxHeight: '100%' }}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>추가할 재료가 없습니다. "항목 추가" 버튼을 눌러주세요.</Text>
-            </View>
-          }
-        />
-      </View>
-      <SafeAreaView style={styles.footerArea}>
-        <View style={styles.footer}>
-          <Button
-            title="항목 추가"
-            onPress={handleAddItem}
-            variant="secondary"
-            style={styles.addButton}
-          />
-          <Button
-            title="모두 추가"
-            onPress={handleSubmit}
-            disabled={isPending}
-            loading={isPending}
-          />
-        </View>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+            <Button
+              title="모두 추가"
+              onPress={handleSubmit}
+              disabled={isPending}
+              loading={isPending}
+            />
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+
+      {/* 영수증 스캔 플로우 */}
+      <ReceiptFlow
+        visible={showReceiptFlow}
+        onClose={handleReceiptCancel}
+        onComplete={handleReceiptComplete}
+      />
+    </>
   );
 }
 

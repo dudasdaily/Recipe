@@ -19,12 +19,23 @@ module.exports = (sequelize) => {
     },
     ingredient_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true, // 임시로 null 허용 - 나중에 실제 재료로 변환할 때 설정
       comment: '식재료 ID',
       references: {
         model: 'ingredients',
         key: 'id'
       }
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      comment: '상품명/식재료명'
+    },
+    unit: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      defaultValue: '개',
+      comment: '단위'
     },
     quantity: {
       type: DataTypes.INTEGER,

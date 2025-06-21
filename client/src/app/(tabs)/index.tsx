@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useIngredientsQuery, useDeleteIngredientMutation } from '@/hooks/query/useIngredients';
+import { useIngredients, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
 import { SearchBar } from '@/components/ingredients/SearchBar';
 import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
@@ -26,8 +26,8 @@ export default function HomeScreen() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data, isLoading } = useIngredientsQuery();
-  const { mutate: deleteMutate } = useDeleteIngredientMutation();
+  const { data, isLoading } = useIngredients();
+  const { mutate: deleteMutate } = useDeleteIngredient();
   const ingredients = data || [];
 
   const filteredIngredients = useMemo(() => {

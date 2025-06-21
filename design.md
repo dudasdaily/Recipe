@@ -118,79 +118,184 @@ CREATE TABLE fcm_tokens (
 
 ### 3.1 재료 관리 API
 ```
-POST /api/ingredients
+POST /api/v1/ingredients
 - 새로운 재료 추가
 
-GET /api/ingredients
+GET /api/v1/ingredients
 - 재료 목록 조회
 - Query Parameters:
   - sort: expiry_date, name, created_at
   - order: asc, desc
 
-PUT /api/ingredients/{id}
+GET /api/v1/ingredients/{id}
+- 특정 재료 조회
+
+PUT /api/v1/ingredients/{id}
 - 재료 정보 수정
 
-DELETE /api/ingredients/{id}
+DELETE /api/v1/ingredients/{id}
 - 재료 삭제
 ```
 
 ### 3.2 이미지 처리 API
 ```
-POST /api/vision/analyze
+POST /api/v1/vision/analyze
 - 이미지 분석 및 식재료 인식
-- 응답:
-  - success: boolean
-  - data: {
-    ingredients: [
-      {
-        name: string (한글 식재료명),
-        confidence: number (신뢰도 0~1),
-        original: string (영문 원본명)
-      }
-    ],
-    message: string (처리 결과 메시지),
-    count?: number (감지된 재료 수),
-    suggestion?: string (개선 제안사항)
+- 성공 응답 (식재료 감지됨):
+  {
+    "success": true,
+    "data": {
+      "ingredients": [
+        {
+          "name": "토마토",
+          "confidence": 0.95
+        }
+      ],
+      "message": "다음과 같은 식재료들이 감지되었습니다.",
+      "count": 1
+    }
   }
-  - error?: string (에러 발생 시 에러 메시지)
+- 성공 응답 (식재료 감지 안됨):
+  {
+    "success": true,
+    "data": {
+      "ingredients": [],
+      "message": "이미지에서 식재료를 찾을 수 없습니다.",
+      "suggestion": "다른 각도에서 찍은 사진이나, 더 밝은 조명에서 찍은 사진으로 다시 시도해보세요."
+    }
+  }
+- 실패 응답:
+  {
+    "success": false,
+    "message": "이미지 분석 중 오류가 발생했습니다.",
+    "error": "에러 메시지",
+    "suggestion": "잠시 후 다시 시도해주세요."
+  }
 
-POST /api/vision/receipt
-- 영수증 이미지 OCR 처리
-- 응답:
-  - success: boolean
-  - items: 감지된 상품 목록
-    - name: 상품명
-    - price: 가격
-    - quantity: 수량 (있는 경우)
-  - total: 총액 (감지된 경우)
-  - date: 구매 일자 (감지된 경우)
-  - store: 상점 정보 (감지된 경우)
+POST /api/v1/ocr/receipt
+- 영수증 이미지 OCR 처리 (식재료만 필터링)
+- 성공 응답:
+  {
+    "success": true,
+    "message": "영수증이 성공적으로 처리되었습니다. 전체 5개 상품 중 2개의 식재료가 감지되었습니다.",
+    "data": {
+      "receipt": {
+        "id": 1,
+        "storeName": "마트명",
+        "purchaseDate": "2024-01-15",
+        "totalAmount": 25000,
+        "imageUrl": "/uploads/receipt.jpg",
+        "userId": 1,
+        "created_at": "2024-01-15T10:00:00.000Z",
+        "updated_at": "2024-01-15T10:00:00.000Z"
+      },
+      "items": [
+        {
+          "id": 1,
+          "receiptId": 1,
+          "name": "토마토",
+          "quantity": 2,
+          "unit": "개",
+          "price": 3000,
+          "created_at": "2024-01-15T10:00:00.000Z",
+          "updated_at": "2024-01-15T10:00:00.000Z"
+        }
+      ],
+      "summary": {
+        "totalItems": 5,
+        "ingredientItems": 2,
+        "filteredOut": 3
+      }
+    }
+  }
+- 실패 응답 (OCR 실패):
+  {
+    "success": false,
+    "error": "텍스트를 감지할 수 없습니다."
+  }
+- 실패 응답 (이미지 누락):
+  {
+    "success": false,
+    "message": "이미지가 제공되지 않았습니다."
+  }
+- 실패 응답 (서버 오류):
+  {
+    "success": false,
+    "message": "영수증 처리 중 오류가 발생했습니다."
+  }
+
+GET /api/v1/ocr/receipt/{id}
+- 저장된 영수증 조회
+- 성공 응답:
+  {
+    "success": true,
+    "data": {
+      "id": 1,
+      "storeName": "마트명",
+      "purchaseDate": "2024-01-15",
+      "totalAmount": 25000,
+      "imageUrl": "/uploads/receipt.jpg",
+      "userId": 1,
+      "items": [
+        {
+          "id": 1,
+          "receiptId": 1,
+          "name": "토마토",
+          "quantity": 2,
+          "unit": "개",
+          "price": 3000
+        }
+      ],
+      "created_at": "2024-01-15T10:00:00.000Z",
+      "updated_at": "2024-01-15T10:00:00.000Z"
+    }
+  }
+- 실패 응답 (영수증 없음):
+  {
+    "success": false,
+    "message": "영수증을 찾을 수 없습니다."
+  }
+- 실패 응답 (서버 오류):
+  {
+    "success": false,
+    "message": "영수증 조회 중 오류가 발생했습니다."
+  }
 ```
 
 ### 3.3 알림 API
 ```
-POST /api/fcm/register
+POST /api/notifications/token
 - FCM 토큰 등록
 - Request Body:
   - token: FCM 토큰 문자열
   - userId: 사용자 ID (선택)
   - deviceInfo: 디바이스 정보 (선택)
 
-POST /api/fcm/set-time
-- 알림 시간 설정
+POST /api/notifications/settings
+- 알림 설정 저장
 - Request Body:
-  - token: FCM 토큰
   - notifyTime: 알림 시간 (HH:mm:ss 형식)
+  - notifyDays: 알림 요일 배열
+  - isEnabled: 알림 활성화 여부
 
-POST /api/fcm/test
+GET /api/notifications/settings
+- 알림 설정 조회
+- 응답:
+  - success: boolean
+  - data: 알림 설정 정보
+
+POST /api/notifications/test
 - 테스트 알림 전송
 - Request Body:
   - token: FCM 토큰
   - title: 알림 제목
   - body: 알림 내용
 
-POST /api/fcm/notify-expiring
-- 유통기한 임박 알림 수동 트리거
+GET /api/notifications/history
+- 알림 히스토리 조회
+- 응답:
+  - success: boolean
+  - data: 알림 히스토리 배열
 ```
 
 ## 4. 클라이언트 앱 설계
@@ -292,6 +397,20 @@ CREATE TABLE notification_history (
 
 ### 6.5 API 엔드포인트
 ```
+POST /api/notifications/token
+- FCM 토큰 등록
+Request:
+{
+    "token": "FCM 토큰 문자열",
+    "userId": number (선택),
+    "deviceInfo": object (선택)
+}
+Response:
+{
+    "success": boolean,
+    "message": string
+}
+
 POST /api/notifications/settings
 - 알림 설정 저장
 Request:
@@ -325,6 +444,12 @@ Response:
 
 POST /api/notifications/test
 - 테스트 알림 전송
+Request:
+{
+    "token": "FCM 토큰",
+    "title": "알림 제목",
+    "body": "알림 내용"
+}
 Response:
 {
     "success": boolean,
