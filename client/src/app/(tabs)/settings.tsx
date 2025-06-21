@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView } f
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotificationStore } from '@/stores/notification';
-import { useExpiryNotification } from '@/hooks/useExpiryNotification';
+import { useLocalExpiryNotification } from '@/hooks/useLocalExpiryNotification';
+import { useIngredientsCache } from '@/hooks/useIngredientsCache';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 
 const DAYS_OF_WEEK = [
@@ -17,17 +18,16 @@ const DAYS_OF_WEEK = [
 ];
 
 // 개발 모드 알림 안내 컴포넌트 추가 (기존 코드 상단에)
-const DevelopmentModeNotice = () => {
-  if (!__DEV__) return null;
-  
+const LocalNotificationNotice = () => {
   return (
     <View style={styles.developmentNotice}>
-      <Text style={styles.developmentTitle}>🧪 개발 모드</Text>
+      <Text style={styles.developmentTitle}>📱 로컬 알림</Text>
       <Text style={styles.developmentText}>
-        • Expo Go에서는 푸시 알림이 제한됩니다{'\n'}
-        • 로컬 알림만 작동합니다{'\n'}
-        • 테스트용 FCM 토큰을 사용합니다{'\n'}
-        • 실제 푸시 알림은 빌드된 앱에서만 가능합니다
+        • 서버 연결 없이 로컬에서만 알림이 작동합니다{'\n'}
+        • 설정한 시간과 요일에 정확히 알림이 발송됩니다{'\n'}
+        • 오프라인에서도 정상 작동합니다 🔗{'\n'}
+        • 앱이 백그라운드/포그라운드 모두에서 알림 표시{'\n'}
+        • 복잡한 푸시 알림 설정이 필요 없습니다
       </Text>
     </View>
   );
@@ -38,42 +38,28 @@ export default function SettingsScreen() {
     enabled,
     notificationTime,
     notificationDays,
-    isLoading,
-    error,
     enableNotifications,
     disableNotifications,
     setNotificationTime,
     setNotificationDays,
-    loadSettingsFromServer,
-    saveSettingsToServer,
-    clearError,
   } = useNotificationStore();
 
-  const { sendManualExpiryNotification } = useExpiryNotification();
+
+  const { sendTestExpiryNotification, scheduleExpiryNotifications, clearScheduledNotifications, checkScheduledNotifications } = useLocalExpiryNotification();
+  const { getCachedIngredients, clearCache } = useIngredientsCache();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const { logError } = useErrorHandler();
   const insets = useSafeAreaInsets();
 
-  // 컴포넌트 마운트 시 서버에서 설정 로드
-  useEffect(() => {
-    loadSettingsFromServer();
-  }, []);
+  // 로컬 저장소에서 자동으로 설정을 불러옵니다 (Zustand persist)
 
-  // 에러가 있으면 알림 표시
-  useEffect(() => {
-    if (error) {
-      Alert.alert('오류', error, [{ text: '확인', onPress: clearError }]);
-    }
-  }, [error]);
-
-  // 알림 설정 변경 시 서버에 저장
+  // 알림 설정 변경 (로컬 저장소에 자동 저장)
   const handleNotificationToggle = async (value: boolean) => {
     if (value) {
       enableNotifications();
     } else {
       disableNotifications();
     }
-    await saveSettingsToServer();
   };
 
   // 알림 시간 변경
@@ -93,7 +79,6 @@ export default function SettingsScreen() {
       });
       
       setNotificationTime(timeString);
-      await saveSettingsToServer();
       
       console.log('알림 시간 저장 완료:', timeString);
     }
@@ -106,7 +91,6 @@ export default function SettingsScreen() {
       : [...notificationDays, dayKey].sort();
     
     setNotificationDays(newDays);
-    await saveSettingsToServer();
   };
 
   // 현재 시간을 Date 객체로 변환
@@ -146,7 +130,7 @@ export default function SettingsScreen() {
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}
     >
-      <DevelopmentModeNotice />
+      <LocalNotificationNotice />
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>유통기한 알림 설정</Text>
         
@@ -156,7 +140,7 @@ export default function SettingsScreen() {
           <Switch
             value={enabled}
             onValueChange={handleNotificationToggle}
-            disabled={isLoading}
+            disabled={false}
           />
         </View>
 
@@ -165,7 +149,7 @@ export default function SettingsScreen() {
           <Text style={styles.label}>알림 시간</Text>
           <TouchableOpacity
             onPress={() => setShowTimePicker(true)}
-            disabled={!enabled || isLoading}
+            disabled={!enabled}
           >
             <Text style={[styles.timeText, !enabled && styles.disabledText]}>
               {notificationTime}
@@ -186,7 +170,7 @@ export default function SettingsScreen() {
                   !enabled && styles.disabledButton,
                 ]}
                 onPress={() => toggleDay(day.key)}
-                disabled={!enabled || isLoading}
+                disabled={!enabled}
               >
                 <Text
                   style={[
@@ -251,8 +235,6 @@ export default function SettingsScreen() {
                 console.log('현재 요일 추가됨:', { currentDay, newDays });
               }
               
-              await saveSettingsToServer();
-              
               Alert.alert(
                 '테스트 설정 완료', 
                 `알림 시간을 ${timeString}로 설정했습니다.\n1분 후에 유통기한 알림이 발송됩니다.`
@@ -265,30 +247,54 @@ export default function SettingsScreen() {
             </Text>
           </TouchableOpacity>
 
+
+
           <TouchableOpacity
-            style={[styles.testButton, styles.immediateTestButton, !enabled && styles.disabledButton]}
+            style={[styles.testButton, styles.localTestButton]}
             onPress={async () => {
               try {
-                console.log('🧪 즉시 알림 테스트 버튼 클릭됨');
-                console.log('📋 현재 알림 설정:', {
-                  enabled,
-                  notificationTime,
-                  notificationDays
-                });
+                console.log('🧪 즉시 로컬 알림 테스트 버튼 클릭됨');
                 
-                await sendManualExpiryNotification();
+                const success = await sendTestExpiryNotification();
                 
-                console.log('✅ 즉시 알림 테스트 성공');
-                Alert.alert('성공', '즉시 유통기한 알림을 발송했습니다.');
+                if (success) {
+                  console.log('✅ 즉시 로컬 알림 테스트 성공');
+                  Alert.alert('성공', '로컬 유통기한 알림을 발송했습니다!\n(서버 연결 없이도 작동)');
+                } else {
+                  Alert.alert('실패', '로컬 알림 발송에 실패했습니다.');
+                }
               } catch (error: any) {
-                console.error('❌ 즉시 알림 테스트 실패:', error);
-                Alert.alert('오류', '즉시 알림 발송에 실패했습니다: ' + error.message);
+                console.error('❌ 즉시 로컬 알림 테스트 실패:', error);
+                Alert.alert('오류', '로컬 알림 발송에 실패했습니다: ' + error.message);
+              }
+            }}
+          >
+            <Text style={styles.testButtonText}>
+              즉시 알림 테스트 📱
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.testButton, styles.scheduleTestButton, !enabled && styles.disabledButton]}
+            onPress={async () => {
+              try {
+                console.log('🔄 로컬 알림 스케줄링 테스트 시작');
+                
+                await scheduleExpiryNotifications();
+                
+                Alert.alert(
+                  '스케줄링 완료', 
+                  `로컬 알림이 스케줄되었습니다!\n\n• 알림 시간: ${notificationTime}\n• 알림 요일: ${notificationDays.length}일\n• 오프라인에서도 작동합니다`
+                );
+              } catch (error: any) {
+                console.error('❌ 로컬 알림 스케줄링 실패:', error);
+                Alert.alert('오류', '로컬 알림 스케줄링에 실패했습니다: ' + error.message);
               }
             }}
             disabled={!enabled}
           >
             <Text style={[styles.testButtonText, !enabled && styles.disabledText]}>
-              즉시 알림 테스트
+              알림 스케줄링 ⏰
             </Text>
           </TouchableOpacity>
         </View>
@@ -302,6 +308,87 @@ export default function SettingsScreen() {
           
           <TouchableOpacity style={styles.button} onPress={testAsyncError}>
             <Text style={styles.buttonText}>비동기 에러 테스트</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={async () => {
+              try {
+                const cachedIngredients = await getCachedIngredients();
+                if (cachedIngredients) {
+                  Alert.alert(
+                    '캐시 확인', 
+                    `캐시된 재료: ${cachedIngredients.length}개\n\n캐시를 사용하여 오프라인에서도 알림이 작동합니다.`
+                  );
+                } else {
+                  Alert.alert('캐시 없음', '캐시된 재료 데이터가 없습니다.');
+                }
+              } catch (error: any) {
+                Alert.alert('오류', '캐시 확인 실패: ' + error.message);
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>재료 캐시 확인 📦</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={async () => {
+              try {
+                const notifications = await checkScheduledNotifications();
+                const message = notifications.length > 0 
+                  ? `현재 ${notifications.length}개의 알림이 스케줄되어 있습니다.\n\n로그를 확인하여 자세한 정보를 보세요.`
+                  : '현재 스케줄된 알림이 없습니다.';
+                Alert.alert('스케줄된 알림 확인', message);
+              } catch (error: any) {
+                Alert.alert('오류', '알림 확인 실패: ' + error.message);
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>스케줄된 알림 확인 📋</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={async () => {
+              try {
+                const { apiClient } = await import('../../services/api/client');
+                const response = await apiClient.get('/notification-log');
+                
+                if (response.logs && response.logs.length > 0) {
+                  const recentLogs = response.logs.slice(0, 5);
+                  const logSummary = recentLogs.map((log: any, index: number) => 
+                    `${index + 1}. ${log.type} - ${log.title}\n   도착시간: ${new Date(log.actualTime).toLocaleString('ko-KR')}\n   시간차이: ${log.timeDifference?.formatted || 'N/A'}`
+                  ).join('\n\n');
+                  
+                  Alert.alert(
+                    '최근 알림 로그', 
+                    `서버에서 확인된 최근 ${recentLogs.length}개 알림:\n\n${logSummary}\n\n총 ${response.total}개의 로그가 있습니다.`
+                  );
+                } else {
+                  Alert.alert('알림 로그', '서버에 저장된 알림 로그가 없습니다.');
+                }
+              } catch (error: any) {
+                console.error('❌ 알림 로그 조회 실패:', error);
+                Alert.alert('오류', '알림 로그 조회에 실패했습니다: ' + error.message);
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>서버 알림 로그 조회 📝</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={async () => {
+              try {
+                await clearScheduledNotifications();
+                Alert.alert('완료', '모든 로컬 알림 스케줄이 정리되었습니다.');
+              } catch (error: any) {
+                Alert.alert('오류', '알림 정리 실패: ' + error.message);
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>알림 정리 🗑️</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -426,6 +513,14 @@ const styles = StyleSheet.create({
   },
   immediateTestButton: {
     backgroundColor: '#FF3B30',
+    marginTop: 12,
+  },
+  localTestButton: {
+    backgroundColor: '#34C759',
+    marginTop: 12,
+  },
+  scheduleTestButton: {
+    backgroundColor: '#FF9500',
     marginTop: 12,
   },
   button: {

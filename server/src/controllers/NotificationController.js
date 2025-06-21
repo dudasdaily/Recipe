@@ -99,7 +99,7 @@ class NotificationController {
   // FCM 토큰 등록
   async registerToken(req, res) {
     try {
-      const { userId, token, deviceInfo } = req.body;
+      const { userId = 1, token, deviceInfo } = req.body; // 기본값 1 설정
       
       const fcmToken = await NotificationService.registerFCMToken(userId, token, deviceInfo);
       
@@ -112,6 +112,27 @@ class NotificationController {
       res.status(500).json({
         success: false,
         error: 'FCM 토큰 등록에 실패했습니다.'
+      });
+    }
+  }
+
+  // 즉시 유통기한 알림 전송 (테스트용)
+  async sendImmediateExpiryNotification(req, res) {
+    try {
+      // 테스트를 위해 임시 사용자 ID 사용
+      const userId = req.body.userId || 1; // req.user.id 대신
+      
+      await NotificationService.sendImmediateExpiryNotification(userId);
+
+      res.json({
+        success: true,
+        message: '즉시 유통기한 알림 전송이 완료되었습니다.'
+      });
+    } catch (error) {
+      console.error('Error sending immediate expiry notification:', error);
+      res.status(500).json({
+        success: false,
+        error: '즉시 유통기한 알림 전송에 실패했습니다.'
       });
     }
   }

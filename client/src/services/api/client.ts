@@ -1,22 +1,20 @@
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import EnvConfig from '@/config/env';
 
 // 환경 변수 디버깅
 console.log('🔍 환경 변수 디버깅:');
 console.log('- process.env.EXPO_PUBLIC_API_BASE_URL:', process.env.EXPO_PUBLIC_API_BASE_URL);
+console.log('- EnvConfig.API_BASE_URL:', EnvConfig.API_BASE_URL);
 console.log('- __DEV__:', __DEV__);
 
-// 개발 모드에서 환경 변수가 로드되지 않는 경우 대비
-const DEV_API_URL = 'http://172.20.10.7:3000/api/v1';
-const FALLBACK_API_URL = 'http://localhost:3000/api/v1';
-
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 
-  (__DEV__ ? DEV_API_URL : FALLBACK_API_URL);
+// EnvConfig를 통해 API URL 가져오기
+export const API_BASE_URL = EnvConfig.API_BASE_URL;
 
 console.log('🔗 최종 API Base URL:', API_BASE_URL);
 
 // 환경 변수 로드 실패 경고
 if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
-  console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL 환경 변수가 없습니다. 기본값 사용:', API_BASE_URL);
+  console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL 환경 변수가 없습니다. EnvConfig 기본값 사용:', API_BASE_URL);
 }
 
 export const apiClient = axios.create({

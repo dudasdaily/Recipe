@@ -16,6 +16,9 @@ router.get('/settings', NotificationController.getSettings);
 // 알림 테스트
 router.post('/test', NotificationController.sendTestNotification);
 
+// 즉시 유통기한 알림 테스트
+router.post('/test-expiry', NotificationController.sendImmediateExpiryNotification);
+
 // 알림 히스토리
 router.get('/history', NotificationController.getNotificationHistory);
 

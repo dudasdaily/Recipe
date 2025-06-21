@@ -7,7 +7,26 @@ import Constants from 'expo-constants';
 class EnvConfig {
   // API 설정
   static get API_BASE_URL(): string {
-    return process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
+    const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+    
+    // 임시: 하드코딩된 개발 서버 URL
+    const developmentUrl = 'http://172.20.10.2:3000/api/v1';
+    const defaultUrl = 'http://localhost:3000/api/v1';
+    
+    // 환경 변수 디버깅
+    if (__DEV__) {
+      console.log('🔍 API_BASE_URL 환경변수 체크:');
+      console.log('- EXPO_PUBLIC_API_BASE_URL:', envUrl);
+      console.log('- 개발 서버 URL:', developmentUrl);
+      console.log('- 기본값:', defaultUrl);
+    }
+    
+    // 개발 모드에서는 지정된 개발 서버 URL 사용
+    if (__DEV__) {
+      return envUrl || developmentUrl;
+    }
+    
+    return envUrl || defaultUrl;
   }
 
   static get API_VERSION(): string {
@@ -34,12 +53,12 @@ class EnvConfig {
   // Firebase 설정 (React Native/Expo용)
   static get FIREBASE_CONFIG() {
     const config = {
-      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyA4CotimuGNCfppbfONHM3VaAOIccyzfpM',
+      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'cookingingredientmanager.firebaseapp.com',
+      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'cookingingredientmanager',
+      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'cookingingredientmanager.firebasestorage.app',
+      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '981367162693',
+      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:981367162693:android:6c7e013bd64146ecc9a02c',
     };
     
     // 개발 모드에서는 설정 검증
@@ -63,11 +82,11 @@ class EnvConfig {
 
   // 디버그 설정
   static get DEBUG_MODE(): boolean {
-    return process.env.EXPO_PUBLIC_DEBUG_MODE === 'true';
+    return process.env.EXPO_PUBLIC_DEBUG_MODE === 'true' || __DEV__;
   }
 
   static get LOG_LEVEL(): 'debug' | 'info' | 'warn' | 'error' {
-    return (process.env.EXPO_PUBLIC_LOG_LEVEL as any) || 'info';
+    return (process.env.EXPO_PUBLIC_LOG_LEVEL as any) || 'debug';
   }
 
   // 이미지 업로드 설정
@@ -81,7 +100,7 @@ class EnvConfig {
 
   // 앱 정보
   static get APP_NAME(): string {
-    return process.env.EXPO_PUBLIC_APP_NAME || 'Recipe Manager';
+    return process.env.EXPO_PUBLIC_APP_NAME || 'Kooky';
   }
 
   static get APP_VERSION(): string {
@@ -98,6 +117,7 @@ class EnvConfig {
     
     if (missing.length > 0) {
       console.warn('⚠️ Missing required environment variables:', missing);
+      console.warn('🔧 Using fallback values for development');
       
       if (this.IS_PRODUCTION) {
         throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -119,6 +139,25 @@ class EnvConfig {
     console.log(`- App Version: ${this.APP_VERSION}`);
     console.log(`- Firebase Project ID: ${this.FIREBASE_CONFIG.projectId || 'NOT_SET'}`);
   }
+
+  // 모든 환경 변수 디버깅 출력
+  static printAllEnvVars(): void {
+    if (!__DEV__) return;
+    
+    console.log('📋 모든 EXPO_PUBLIC_ 환경 변수:');
+    const exposedVars = Object.keys(process.env)
+      .filter(key => key.startsWith('EXPO_PUBLIC_'))
+      .sort();
+      
+    if (exposedVars.length === 0) {
+      console.log('- 🚨 EXPO_PUBLIC_ 환경 변수가 하나도 로드되지 않았습니다!');
+      console.log('- 💡 앱을 완전히 재시작해보세요 (개발 서버 포함)');
+    } else {
+      exposedVars.forEach(key => {
+        console.log(`- ${key}: ${process.env[key]}`);
+      });
+    }
+  }
 }
 
 // 앱 시작 시 환경 변수 검증
@@ -127,6 +166,7 @@ EnvConfig.validate();
 // 디버그 모드에서 환경 정보 출력
 if (__DEV__) {
   EnvConfig.printEnvInfo();
+  EnvConfig.printAllEnvVars();
 }
 
 export default EnvConfig; 

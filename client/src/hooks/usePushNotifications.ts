@@ -4,20 +4,35 @@ import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { getNotificationHistory } from '../services/api/notifications';
 import { useNotificationStore } from '../stores/notification';
+import { logNotificationReceived, logTestNotification, logExpiryNotification } from '../services/api/notificationLog';
 
 // 전역 플래그로 중복 초기화 방지
 let isInitialized = false;
 let globalNotificationListener: Notifications.Subscription | null = null;
 let globalResponseListener: Notifications.Subscription | null = null;
 
-// 알림 핸들러 설정
+// 알림 핸들러 설정 - 테스트 알림만 포그라운드에서 표시
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    const notificationType = notification.request.content.data?.type;
+    const title = notification.request.content.title || '';
+    
+    // 모든 알림을 포그라운드에서 표시 (테스트 알림 + 스케줄된 알림)
+    const shouldShowInForeground = notificationType === 'LOCAL_NOTIFICATION' || 
+                                  notificationType === 'TEST_NOTIFICATION' ||
+                                  notificationType === 'SCHEDULED_EXPIRY_ALERT' ||
+                                  notificationType === 'EXPIRY_ALERT' ||
+                                  (title ? title.includes('테스트') : false);
+    
+    console.log(`📱 알림 핸들러: ${title}, 타입: ${notificationType}, 포그라운드 표시: ${shouldShowInForeground}`);
+    
+    return {
+      shouldShowBanner: Boolean(shouldShowInForeground),
+      shouldShowList: Boolean(shouldShowInForeground),
+      shouldPlaySound: Boolean(shouldShowInForeground),
+      shouldSetBadge: false,
+    };
+  },
 });
 
 /**
@@ -53,12 +68,85 @@ export const usePushNotifications = () => {
       globalResponseListener = null;
     }
 
+    // 알림 도착 로그 처리 함수
+    const handleNotificationLog = async (notification: Notifications.Notification) => {
+      try {
+        const { title, body, data } = notification.request.content;
+        const notificationType = data?.type as string;
+        
+        console.log('📝 알림 로그 처리 시작:', { title, type: notificationType });
+
+        // 테스트 알림인 경우
+        if (notificationType === 'TEST_NOTIFICATION') {
+          if (title?.includes('1분 후')) {
+            await logTestNotification('DELAYED');
+          } else {
+            await logTestNotification('IMMEDIATE');
+          }
+          return;
+        }
+
+        // 유통기한 알림인 경우
+        if (notificationType === 'EXPIRY_ALERT' || notificationType === 'SCHEDULED_EXPIRY_ALERT') {
+          // 재료 정보가 data에 있다면 활용
+          const ingredientId = data?.ingredientId as number;
+          const ingredientName = (data?.ingredientName as string) || '알 수 없는 재료';
+          const expiryDate = data?.expiryDate as string;
+          const scheduledTime = data?.scheduledTime as string;
+
+          if (ingredientId) {
+            await logExpiryNotification(
+              ingredientId,
+              ingredientName,
+              expiryDate || '',
+              scheduledTime
+            );
+          } else {
+            // 재료 정보가 없는 경우 일반 로그
+            await logNotificationReceived({
+              type: 'EXPIRY_ALERT',
+              title: title || '유통기한 알림',
+              body: body || '',
+              actualTime: new Date().toISOString(),
+              scheduledTime,
+              deviceInfo: {
+                platform: 'expo',
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
+            });
+          }
+          return;
+        }
+
+        // 기타 로컬 알림인 경우
+        if (notificationType === 'LOCAL_NOTIFICATION') {
+          await logNotificationReceived({
+            type: 'LOCAL_NOTIFICATION',
+            title: title || '로컬 알림',
+            body: body || '',
+            actualTime: new Date().toISOString(),
+            deviceInfo: {
+              platform: 'expo',
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            },
+          });
+          return;
+        }
+
+        console.log('ℹ️ 로그 대상이 아닌 알림 타입:', notificationType);
+      } catch (error) {
+        console.error('❌ 알림 로그 처리 실패:', error);
+        // 로그 실패가 앱 동작을 방해하지 않도록 에러를 throw하지 않음
+      }
+    };
+
     // 포그라운드 알림 리스너
     globalNotificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('📱 포그라운드 알림 수신:', notification.request.content.title);
-      
-      // 알림을 히스토리에 저장
       const { title, body, data } = notification.request.content;
+      console.log('📱 포그라운드 알림 수신:', title);
+      
+      // 서버에 알림 도착 로그 전송
+      handleNotificationLog(notification);
       
       // 수동 알림(EXPIRY_ALERT)은 이미 히스토리에 저장되었으므로 중복 저장 방지
       if (data?.type === 'EXPIRY_ALERT') {
@@ -66,13 +154,16 @@ export const usePushNotifications = () => {
         return;
       }
       
-      addNotificationToHistory({
-        type: data?.type || 'LOCAL_NOTIFICATION',
-        title: title || '알림',
-        body: body || '',
-        sentAt: new Date().toISOString(),
-        readAt: null,
-      });
+      // 스케줄된 알림만 히스토리에 저장
+      if (data?.type === 'SCHEDULED_EXPIRY_ALERT') {
+        addNotificationToHistory({
+          type: 'EXPIRY_ALERT',
+          title: title || '알림',
+          body: body || '',
+          sentAt: new Date().toISOString(),
+          readAt: null,
+        });
+      }
     });
 
     // 알림 탭 리스너
@@ -82,7 +173,7 @@ export const usePushNotifications = () => {
       const { data } = response.notification.request.content;
       
       // 알림 타입에 따른 화면 이동
-      if (data?.type === 'EXPIRY_ALERT') {
+      if (data?.type === 'EXPIRY_ALERT' || data?.type === 'SCHEDULED_EXPIRY_ALERT') {
         // 유통기한 알림인 경우 재료 목록 화면으로 이동
         router.push('/(tabs)');
       } else if (data?.type === 'TEST_NOTIFICATION') {
@@ -112,16 +203,25 @@ export const usePushNotifications = () => {
     try {
       console.log('📱 scheduleLocalNotification 호출됨:', title, body, notificationType);
       
+      // 스케줄된 알림과 즉시 알림을 구분
+      const actualType = trigger ? 'SCHEDULED_EXPIRY_ALERT' : notificationType;
+      
+      // trigger에서 data 추출
+      const additionalData = trigger?.data || {};
+      
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title,
           body,
-          data: { type: notificationType },
+          data: { 
+            type: actualType,
+            ...additionalData
+          },
         },
-        trigger: trigger || null, // null이면 즉시 발송
+        trigger: trigger ? trigger.date : null, // Date 객체 직접 전달
       });
       
-      console.log('✅ 로컬 알림 스케줄됨:', notificationId, notificationType);
+      console.log('✅ 로컬 알림 스케줄됨:', notificationId, actualType);
       return notificationId;
     } catch (error) {
       console.error('❌ 로컬 알림 스케줄링 실패:', error);
@@ -129,9 +229,12 @@ export const usePushNotifications = () => {
     }
   };
 
-  // 즉시 로컬 알림 발송 (테스트용)
+  // 즉시 로컬 알림 발송 (테스트용) - 포그라운드에서는 조용히 처리
   const sendImmediateNotification = async (title: string, body: string) => {
     try {
+      // 포그라운드에서는 콘솔 로그만 출력
+      console.log('📱 즉시 알림:', title, body);
+      
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title,
@@ -168,6 +271,8 @@ export const usePushNotifications = () => {
       console.error('알림 취소 실패:', error);
     }
   };
+
+
 
   return {
     scheduleLocalNotification,

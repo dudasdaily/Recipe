@@ -7,31 +7,18 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useFCMToken } from '../hooks/useFCMToken';
-import { usePushNotifications } from '../hooks/usePushNotifications';
-import { useExpiryNotification } from '../hooks/useExpiryNotification';
-import { useErrorHandler } from '../hooks/useErrorHandler';
+import { AppInitializer } from '../components/AppInitializer';
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [isReady, setIsReady] = React.useState(false);
-  const { isInitialized } = useFCMToken();
-  
-  // 푸시 알림 리스너 초기화
-  usePushNotifications();
-  
-  // 유통기한 알림 초기화
-  useExpiryNotification();
-
-  // 전역 에러 핸들러 초기화
-  useErrorHandler();
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // FCM 토큰 초기화 대기
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // 기본 앱 초기화
+        await new Promise(resolve => setTimeout(resolve, 500));
         setIsReady(true);
       } catch (error) {
         console.error('App initialization failed:', error);
@@ -54,13 +41,15 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <StatusBar style="auto" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          />
-          <Toast />
+          <AppInitializer>
+            <StatusBar style="auto" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            />
+            <Toast />
+          </AppInitializer>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </QueryClientProvider>
