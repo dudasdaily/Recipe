@@ -14,6 +14,7 @@ export type Ingredient = {
   default_expiry_days: number;
   created_at: string;
   updated_at: string;
+  imageUrl?: string; // 식재료 사진 URL
 };
 
 // 영수증 관련 타입들 - design.md 스펙에 맞게 개선

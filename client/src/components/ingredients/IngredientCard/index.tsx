@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { IngredientCardProps } from './types';
 import { Title, InfoText } from './styles';
-import { View, TouchableOpacity, PanResponder, GestureResponderEvent, Animated, Text } from 'react-native';
+import { View, TouchableOpacity, PanResponder, GestureResponderEvent, Animated, Text, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -46,7 +46,7 @@ export const IngredientCard = ({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
-    flexDirection: 'row-reverse' as const,
+    flexDirection: 'row' as const,
     alignItems: 'center' as const,
   };
 
@@ -56,8 +56,18 @@ export const IngredientCard = ({
       ? '없음'
       : new Date(ingredient.expiry_date).toLocaleDateString();
 
+  // 이미지 URL이 있으면 사용, 없으면 placeholder
+  const imageUrl = ingredient.imageUrl
+    ? { uri: ingredient.imageUrl }
+    : require('../../../../assets/images/partial-react-logo.png');
+
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
+      <Image
+        source={imageUrl}
+        style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#eee' }}
+        resizeMode="cover"
+      />
       {selectionMode && (
         <View style={{
           width: 28,
@@ -90,7 +100,6 @@ export const IngredientCard = ({
           </TouchableOpacity>
         </View>
       )}
-      
       {!selectionMode && (
         <TouchableOpacity
           onPress={() => onEdit && onEdit(ingredient)}
@@ -108,7 +117,6 @@ export const IngredientCard = ({
           <Ionicons name="pencil" size={16} color="#007AFF" />
         </TouchableOpacity>
       )}
-      
       <View style={{ flex: 1 }}>
         <TouchableOpacity
           style={{ width: '100%' }}

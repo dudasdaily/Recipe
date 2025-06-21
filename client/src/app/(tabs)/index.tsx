@@ -4,26 +4,35 @@ import { FlashList } from '@shopify/flash-list';
 import { useIngredients, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
 import { SearchBar } from '@/components/ingredients/SearchBar';
-import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
 import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Ingredient } from '@/types/api';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const EXPIRY_THRESHOLD_DAYS = 7;
 const STORAGE_TYPES = [
-  { value: 'ROOM_TEMP', label: '실온' },
-  { value: 'REFRIGERATED', label: '냉장' },
-  { value: 'FROZEN', label: '냉동' },
+  { label: '전체', value: '' },
+  { label: '실온', value: 'ROOM_TEMP' },
+  { label: '냉장', value: 'REFRIGERATED' },
+  { label: '냉동', value: 'FROZEN' },
 ];
 const CATEGORIES = [
-  '전체', '채소', '과일', '육류', '수산물', '유제품', '기타'
+  { label: '전체', value: '전체' },
+  { label: '채소', value: '채소' },
+  { label: '과일', value: '과일' },
+  { label: '육류', value: '육류' },
+  { label: '수산물', value: '수산물' },
+  { label: '유제품', value: '유제품' },
+  { label: '기타', value: '기타' },
 ];
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStorage, setSelectedStorage] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [storageOpen, setStorageOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [selectedStorage, setSelectedStorage] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('전체');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -35,7 +44,6 @@ export default function HomeScreen() {
   const { mutate: deleteMutate } = useDeleteIngredient();
   const ingredients = data || [];
 
-  // 디버깅용 로그
   useEffect(() => {
     console.log('🏠 홈 화면 - 식재료 데이터 상태:', {
       isLoading,
@@ -52,20 +60,8 @@ export default function HomeScreen() {
       const matchStorage = selectedStorage ? ingredient.storage_type === selectedStorage : true;
       const matchCategory = selectedCategory === '전체' ? true : ingredient.category === selectedCategory;
       return matchName && matchStorage && matchCategory;
-    });
+    }).sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
   }, [ingredients, searchQuery, selectedStorage, selectedCategory]);
-
-  const expiringIngredients = useMemo(() => {
-    const now = new Date();
-    const threshold = new Date();
-    threshold.setDate(now.getDate() + EXPIRY_THRESHOLD_DAYS);
-    return ingredients.filter(ingredient => {
-      const expiryDate = new Date(ingredient.expiry_date);
-      return expiryDate <= threshold;
-    }).sort((a, b) => 
-      new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
-    );
-  }, [ingredients]);
 
   const handleSelect = (id: number) => {
     setSelectedIds(prev =>
@@ -103,7 +99,6 @@ export default function HomeScreen() {
     setEditingIngredient(null);
   };
 
-  // 재시도 함수
   const handleRetry = () => {
     console.log('🔄 홈 화면 - 데이터 재시도 요청');
     refetch();
@@ -134,53 +129,52 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>  
       <ScrollView
         stickyHeaderIndices={[0]}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 50 }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.stickyHeader}>
+          {/* 타이틀 */}
+          <Text style={styles.title}>MY ICE-BOX</Text>
+          {/* 검색창 */}
           <View style={styles.searchBarWrapper}>
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
           </View>
-          <View style={styles.gap8} />
-      <ExpiryAlert ingredients={expiringIngredients} />
-          <View style={styles.gap8} />
-          <View style={styles.filterRow}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {STORAGE_TYPES.map(type => (
-                <TouchableOpacity
-                  key={type.value}
-                  style={[styles.filterButton, selectedStorage === type.value && styles.filterButtonSelected]}
-                  onPress={() => setSelectedStorage(selectedStorage === type.value ? '' : type.value)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.filterButtonText, selectedStorage === type.value && styles.filterButtonTextSelected]}>{type.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {CATEGORIES.map(category => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryButton,
-                    selectedCategory === category && styles.categoryButtonSelected,
-                  ]}
-                  onPress={() => setSelectedCategory(category)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[
-                    styles.categoryButtonText,
-                    selectedCategory === category && styles.categoryButtonTextSelected,
-                  ]}>{category}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+          {/* 보관방법/카테고리 드롭다운 한 줄 */}
+          <View style={styles.rowContainer}>
+            <View style={styles.selectBox}>
+              <DropDownPicker
+                open={storageOpen}
+                value={selectedStorage}
+                items={STORAGE_TYPES}
+                setOpen={setStorageOpen}
+                setValue={setSelectedStorage}
+                setItems={() => {}}
+                placeholder="보관방법"
+                style={{ height: 35, minHeight: 35 }}
+                zIndex={2000}
+                listMode="SCROLLVIEW"
+              />
+            </View>
+            <View style={styles.selectBox}>
+              <DropDownPicker
+                open={categoryOpen}
+                value={selectedCategory}
+                items={CATEGORIES}
+                setOpen={setCategoryOpen}
+                setValue={setSelectedCategory}
+                setItems={() => {}}
+                placeholder="카테고리"
+                style={{ height: 35, minHeight: 35 }}
+                zIndex={1000}
+                listMode="SCROLLVIEW"
+              />
+            </View>
           </View>
         </View>
         {/* 선택 모드 UI */}
@@ -204,31 +198,31 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         )}
+        {/* 식재료 목록 (유통기한 임박순) */}
         {filteredIngredients.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>등록된 식재료가 없습니다.</Text>
           </View>
         ) : (
-      <FlashList
-        data={filteredIngredients}
-        extraData={{ isSelectionMode, selectedIds }}
-        renderItem={({ item }) => (
-          <IngredientCard
-            ingredient={item}
-            selectionMode={isSelectionMode}
-            selected={selectedIds.includes(item.id)}
-            onSelect={() => handleSelect(item.id)}
-            onLongPress={() => handleLongPress(item.id)}
-            onEdit={handleEdit}
+          <FlashList
+            data={filteredIngredients}
+            extraData={{ isSelectionMode, selectedIds }}
+            renderItem={({ item }) => (
+              <IngredientCard
+                ingredient={item}
+                selectionMode={isSelectionMode}
+                selected={selectedIds.includes(item.id)}
+                onSelect={() => handleSelect(item.id)}
+                onLongPress={() => handleLongPress(item.id)}
+                onEdit={handleEdit}
+              />
+            )}
+            keyExtractor={item => String(item.id)}
+            estimatedItemSize={100}
+            contentContainerStyle={styles.listContent}
           />
         )}
-        keyExtractor={item => String(item.id)}
-        estimatedItemSize={100}
-        contentContainerStyle={styles.listContent}
-      />
-        )}
       </ScrollView>
-      
       {/* 수정 모달 */}
       <Modal
         visible={!!editingIngredient}
@@ -239,10 +233,12 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             {editingIngredient && (
-              <EditIngredientForm
-                ingredient={editingIngredient}
-                onClose={handleCloseEdit}
-              />
+              <ScrollView style={{flexGrow: 0}} contentContainerStyle={{flexGrow: 1}}>
+                <EditIngredientForm
+                  ingredient={editingIngredient}
+                  onClose={handleCloseEdit}
+                />
+              </ScrollView>
             )}
           </View>
         </View>
@@ -266,74 +262,31 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     zIndex: 10,
   },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#222',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
   searchBarWrapper: {
     paddingHorizontal: 12,
   },
-  gap8: {
-    height: 8,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-  },
-  filterScroll: {
+  rowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    zIndex: 100,
     gap: 8,
-    paddingRight: 8,
   },
-  filterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F2F4F7',
-    marginRight: 8,
-    borderWidth: 0,
-  },
-  filterButtonSelected: {
-    backgroundColor: '#007AFF',
-  },
-  filterButtonText: {
-    color: '#222',
-    fontSize: 13,
-  },
-  filterButtonTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 18,
-    backgroundColor: '#F2F4F7',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-  },
-  categoryButtonSelected: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  categoryButtonText: {
-    color: '#222',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  categoryButtonTextSelected: {
-    color: '#007AFF',
-    fontWeight: '700',
+  selectBox: {
+    width: '25%',
+    marginHorizontal: 0,
+    minHeight: 44,
+    height: 20,
   },
   listContent: {
     paddingHorizontal: 12,
@@ -352,16 +305,19 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 20,
+    paddingTop: 20,
   },
   modalContainer: {
     backgroundColor: 'transparent',
     borderRadius: 16,
-    maxHeight: '80%',
+    maxHeight: '100%',
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 320,
+    marginTop: 24,
+    overflow: 'hidden',
   },
   centerContent: {
     justifyContent: 'center',
