@@ -8,12 +8,23 @@ import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelecto
 import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
 
 export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingredient; onClose: () => void }) {
+  // 유통기한을 YYYY-MM-DD 형식으로 변환하는 함수
+  const formatExpiryDate = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      // ISO 문자열에서 날짜 부분만 추출
+      return dateString.split('T')[0];
+    } catch {
+      return dateString;
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: ingredient.name,
     category: ingredient.category,
     storage_type: ingredient.storage_type,
     quantity: ingredient.quantity,
-    expiry_date: ingredient.expiry_date,
+    expiry_date: formatExpiryDate(ingredient.expiry_date),
     default_expiry_days: ingredient.default_expiry_days,
   });
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateIngredient();

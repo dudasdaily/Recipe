@@ -23,12 +23,26 @@ type Props = {
 
 export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 선택', style }: Props) {
   const [visible, setVisible] = useState(false);
-  const [input, setInput] = useState(value || '');
+  const [input, setInput] = useState('');
   const [touched, setTouched] = useState(false);
+
+  // 날짜 문자열을 YYYY-MM-DD 형식으로 변환하는 함수
+  const formatDateValue = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      // ISO 문자열이면 날짜 부분만 추출
+      if (dateString.includes('T')) {
+        return dateString.split('T')[0];
+      }
+      return dateString;
+    } catch {
+      return dateString;
+    }
+  };
 
   // value가 바뀔 때만 input을 동기화
   useEffect(() => {
-    setInput(value || '');
+    setInput(formatDateValue(value || ''));
   }, [value]);
 
   const handleInputChange = (text: string) => {

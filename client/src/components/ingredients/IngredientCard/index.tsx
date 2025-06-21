@@ -90,6 +90,25 @@ export const IngredientCard = ({
           </TouchableOpacity>
         </View>
       )}
+      
+      {!selectionMode && (
+        <TouchableOpacity
+          onPress={() => onEdit && onEdit(ingredient)}
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+            backgroundColor: '#f8f9fa',
+            marginLeft: 8,
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="pencil" size={16} color="#007AFF" />
+        </TouchableOpacity>
+      )}
+      
       <View style={{ flex: 1 }}>
         <TouchableOpacity
           style={{ width: '100%' }}

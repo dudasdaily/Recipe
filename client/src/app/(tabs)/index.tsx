@@ -5,6 +5,7 @@ import { useIngredients, useDeleteIngredient } from '@/hooks/query/useIngredient
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
 import { SearchBar } from '@/components/ingredients/SearchBar';
 import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
+import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm';
 import { Ionicons } from '@expo/vector-icons';
 import type { Ingredient } from '@/types/api';
 
@@ -25,6 +26,7 @@ export default function HomeScreen() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
 
   const { data, isLoading } = useIngredients();
   const { mutate: deleteMutate } = useDeleteIngredient();
@@ -77,6 +79,14 @@ export default function HomeScreen() {
     setIsSelectionMode(false);
     setSelectedIds([]);
     setIsDeleting(false);
+  };
+
+  const handleEdit = (ingredient: Ingredient) => {
+    setEditingIngredient(ingredient);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingIngredient(null);
   };
 
   if (isLoading) {
@@ -173,6 +183,7 @@ export default function HomeScreen() {
             selected={selectedIds.includes(item.id)}
             onSelect={() => handleSelect(item.id)}
             onLongPress={() => handleLongPress(item.id)}
+            onEdit={handleEdit}
           />
         )}
         keyExtractor={item => String(item.id)}
@@ -181,6 +192,25 @@ export default function HomeScreen() {
       />
         )}
       </ScrollView>
+      
+      {/* 수정 모달 */}
+      <Modal
+        visible={!!editingIngredient}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseEdit}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {editingIngredient && (
+              <EditIngredientForm
+                ingredient={editingIngredient}
+                onClose={handleCloseEdit}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -282,5 +312,19 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#888',
     fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: 'transparent',
+    borderRadius: 16,
+    maxHeight: '80%',
+    width: '100%',
+    maxWidth: 400,
   },
 }); 
