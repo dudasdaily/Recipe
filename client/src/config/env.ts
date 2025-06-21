@@ -110,25 +110,31 @@ class EnvConfig {
   static validate(): void {
     // 프로덕션에서만 필수 환경 변수 체크
     if (this.IS_PRODUCTION) {
-      const required = [
-        'EXPO_PUBLIC_API_BASE_URL',
-        'EXPO_PUBLIC_FIREBASE_API_KEY',
-        'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+      const requiredConfigs = [
+        { key: 'API_BASE_URL', value: this.API_BASE_URL },
+        { key: 'FIREBASE_API_KEY', value: this.FIREBASE_CONFIG.apiKey },
+        { key: 'FIREBASE_PROJECT_ID', value: this.FIREBASE_CONFIG.projectId },
       ];
 
-      const missing = required.filter(key => !process.env[key]);
+      const missing = requiredConfigs.filter(config => !config.value || config.value.includes('localhost'));
       
       if (missing.length > 0) {
-        throw new Error(`Missing required environment variables for production: ${missing.join(', ')}`);
+        throw new Error(`Missing required configuration for production: ${missing.map(c => c.key).join(', ')}`);
       }
     }
     
-    // 개발 모드에서는 경고만 출력
+    // 개발 모드에서는 상태만 확인하고 경고 출력
     if (this.IS_DEVELOPMENT && this.DEBUG_MODE) {
+      const configUrl = Constants.expoConfig?.extra?.apiBaseUrl;
       const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-      if (!envUrl) {
-        console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL 환경 변수가 설정되지 않았습니다.');
-        console.warn('🔧 기본값 localhost:3000을 사용합니다.');
+      
+      if (!envUrl && !configUrl) {
+        console.warn('⚠️ API_BASE_URL을 가져올 수 없습니다.');
+        console.warn('🔧 기본값을 사용합니다.');
+      } else if (!envUrl && configUrl) {
+        console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL 환경 변수가 없습니다. EnvConfig 기본값 사용:', configUrl);
+      } else {
+        console.log('✅ 환경 변수 로드 성공');
       }
     }
   }
@@ -146,11 +152,23 @@ class EnvConfig {
     console.log(`- Push Notifications: ${this.PUSH_NOTIFICATION_ENABLED}`);
     console.log(`- App Version: ${this.APP_VERSION}`);
     console.log(`- Firebase Project ID: ${this.FIREBASE_CONFIG.projectId || 'NOT_SET'}`);
+    
+    // 추가 환경 변수 상태 확인
+    console.log('🔍 추가 환경 변수 상태:');
+    console.log('- Constants.expoConfig:', !!Constants.expoConfig);
+    console.log('- Constants.expoConfig.extra:', !!Constants.expoConfig?.extra);
+    console.log('- 모든 extra 키:', Object.keys(Constants.expoConfig?.extra || {}));
   }
 
   // 모든 환경 변수 디버깅 출력
   static printAllEnvVars(): void {
     if (!__DEV__) return;
+    
+    console.log('🔍 환경 변수 디버깅:');
+    console.log('- process.env.EXPO_PUBLIC_API_BASE_URL:', process.env.EXPO_PUBLIC_API_BASE_URL);
+    console.log('- Constants.expoConfig.extra.apiBaseUrl:', Constants.expoConfig?.extra?.apiBaseUrl);
+    console.log('- EnvConfig.API_BASE_URL:', this.API_BASE_URL);
+    console.log('- __DEV__:', __DEV__);
     
     console.log('📋 모든 EXPO_PUBLIC_ 환경 변수:');
     const exposedVars = Object.keys(process.env)
@@ -159,7 +177,8 @@ class EnvConfig {
       
     if (exposedVars.length === 0) {
       console.log('- 🚨 EXPO_PUBLIC_ 환경 변수가 하나도 로드되지 않았습니다!');
-      console.log('- 💡 앱을 완전히 재시작해보세요 (개발 서버 포함)');
+      console.log('- 💡 이는 Expo SDK 53의 정상적인 동작일 수 있습니다.');
+      console.log('- 💡 Constants.expoConfig.extra를 통해 값을 가져옵니다.');
     } else {
       exposedVars.forEach(key => {
         console.log(`- ${key}: ${process.env[key]}`);
