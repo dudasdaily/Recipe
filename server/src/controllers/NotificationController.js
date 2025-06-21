@@ -8,7 +8,7 @@ class NotificationController {
       const userId = 1; // req.user.id 대신
       const settings = req.body;
 
-      const notificationSetting = await NotificationService.saveNotificationSettings(
+      const notificationSetting = await NotificationService.updateNotificationSettings(
         userId,
         settings
       );

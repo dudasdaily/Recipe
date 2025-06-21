@@ -264,34 +264,34 @@ GET /api/v1/ocr/receipt/{id}
 
 ### 3.3 알림 API
 ```
-POST /api/notifications/token
+POST /api/v1/notifications/token
 - FCM 토큰 등록
 - Request Body:
   - token: FCM 토큰 문자열
   - userId: 사용자 ID (선택)
   - deviceInfo: 디바이스 정보 (선택)
 
-POST /api/notifications/settings
+POST /api/v1/notifications/settings
 - 알림 설정 저장
 - Request Body:
   - notifyTime: 알림 시간 (HH:mm:ss 형식)
   - notifyDays: 알림 요일 배열
   - isEnabled: 알림 활성화 여부
 
-GET /api/notifications/settings
+GET /api/v1/notifications/settings
 - 알림 설정 조회
 - 응답:
   - success: boolean
   - data: 알림 설정 정보
 
-POST /api/notifications/test
+POST /api/v1/notifications/test
 - 테스트 알림 전송
 - Request Body:
   - token: FCM 토큰
   - title: 알림 제목
   - body: 알림 내용
 
-GET /api/notifications/history
+GET /api/v1/notifications/history
 - 알림 히스토리 조회
 - 응답:
   - success: boolean
@@ -397,7 +397,7 @@ CREATE TABLE notification_history (
 
 ### 6.5 API 엔드포인트
 ```
-POST /api/notifications/token
+POST /api/v1/notifications/token
 - FCM 토큰 등록
 Request:
 {
@@ -411,7 +411,7 @@ Response:
     "message": string
 }
 
-POST /api/notifications/settings
+POST /api/v1/notifications/settings
 - 알림 설정 저장
 Request:
 {
@@ -430,7 +430,7 @@ Response:
     }
 }
 
-GET /api/notifications/settings
+GET /api/v1/notifications/settings
 - 알림 설정 조회
 Response:
 {
@@ -442,7 +442,7 @@ Response:
     }
 }
 
-POST /api/notifications/test
+POST /api/v1/notifications/test
 - 테스트 알림 전송
 Request:
 {
@@ -456,7 +456,7 @@ Response:
     "message": string
 }
 
-GET /api/notifications/history
+GET /api/v1/notifications/history
 - 알림 히스토리 조회
 Response:
 {

@@ -8,11 +8,13 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationHistory } from '@/types/api';
 import { useNotificationStore } from '@/stores/notification';
 
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
   
   const {
     notificationHistory,
@@ -183,20 +185,32 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>알림</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={onRefresh}>
+          <TouchableOpacity 
+            style={styles.buttonTouchArea}
+            onPress={onRefresh}
+            activeOpacity={0.7}
+          >
             <Text style={styles.refreshButton}>새로고침</Text>
           </TouchableOpacity>
           {notificationHistory.length > 1 && (
-            <TouchableOpacity onPress={handleCleanupDuplicates}>
+            <TouchableOpacity 
+              style={styles.buttonTouchArea}
+              onPress={handleCleanupDuplicates}
+              activeOpacity={0.7}
+            >
               <Text style={styles.cleanupButton}>중복정리</Text>
             </TouchableOpacity>
           )}
           {notificationHistory.length > 0 && (
-            <TouchableOpacity onPress={handleClearHistory}>
+            <TouchableOpacity 
+              style={styles.buttonTouchArea}
+              onPress={handleClearHistory}
+              activeOpacity={0.7}
+            >
               <Text style={styles.clearButton}>삭제</Text>
             </TouchableOpacity>
           )}
@@ -211,7 +225,10 @@ export default function NotificationsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          { paddingBottom: insets.bottom + 20 }
+        ]}
       />
     </View>
   );
@@ -226,30 +243,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    backgroundColor: '#fff',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#333',
   },
   headerButtons: {
     flexDirection: 'row',
-    gap: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  buttonTouchArea: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   refreshButton: {
     color: '#007AFF',
     fontSize: 16,
+    fontWeight: '600',
   },
   cleanupButton: {
     color: '#FF9500',
     fontSize: 16,
-    marginRight: 10,
+    fontWeight: '600',
   },
   clearButton: {
     color: '#FF3B30',
     fontSize: 16,
+    fontWeight: '600',
   },
   listContainer: {
     flexGrow: 1,
@@ -258,6 +290,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
   },
   notificationHeader: {
     flexDirection: 'row',
@@ -275,6 +308,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 2,
+    color: '#333',
   },
   notificationTime: {
     fontSize: 12,

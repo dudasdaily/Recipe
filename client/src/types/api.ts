@@ -94,6 +94,17 @@ export type NotificationSettings = {
   isEnabled: boolean;
 };
 
+// 서버 응답용 타입 (snake_case)
+export type NotificationSettingsServerResponse = {
+  id?: number;
+  notify_time: string; // "HH:mm:ss" 형식
+  notify_days: string[]; // ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+  is_enabled: boolean;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: number;
+};
+
 export type NotificationHistory = {
   id: number;
   type: string;

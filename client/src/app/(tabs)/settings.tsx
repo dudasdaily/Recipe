@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotificationStore } from '@/stores/notification';
 import { useExpiryNotification } from '@/hooks/useExpiryNotification';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -14,6 +15,23 @@ const DAYS_OF_WEEK = [
   { key: 5, label: '금', short: 'FRI' },
   { key: 6, label: '토', short: 'SAT' },
 ];
+
+// 개발 모드 알림 안내 컴포넌트 추가 (기존 코드 상단에)
+const DevelopmentModeNotice = () => {
+  if (!__DEV__) return null;
+  
+  return (
+    <View style={styles.developmentNotice}>
+      <Text style={styles.developmentTitle}>🧪 개발 모드</Text>
+      <Text style={styles.developmentText}>
+        • Expo Go에서는 푸시 알림이 제한됩니다{'\n'}
+        • 로컬 알림만 작동합니다{'\n'}
+        • 테스트용 FCM 토큰을 사용합니다{'\n'}
+        • 실제 푸시 알림은 빌드된 앱에서만 가능합니다
+      </Text>
+    </View>
+  );
+};
 
 export default function SettingsScreen() {
   const {
@@ -34,6 +52,7 @@ export default function SettingsScreen() {
   const { sendManualExpiryNotification } = useExpiryNotification();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const { logError } = useErrorHandler();
+  const insets = useSafeAreaInsets();
 
   // 컴포넌트 마운트 시 서버에서 설정 로드
   useEffect(() => {
@@ -123,7 +142,11 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={[styles.container, { paddingTop: insets.top }]}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}
+    >
+      <DevelopmentModeNotice />
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>유통기한 알림 설정</Text>
         
@@ -416,5 +439,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '500',
+  },
+  developmentNotice: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  developmentTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  developmentText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
 }); 

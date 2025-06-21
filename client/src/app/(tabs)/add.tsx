@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SegmentedControl } from '@/components/common/SegmentedControl';
 import AddIngredientForm from '@/components/ingredients/AddIngredientForm';
 
 export default function AddScreen() {
   const [mode, setMode] = useState<'SINGLE' | 'MULTI'>('SINGLE');
   const [bulkNames, setBulkNames] = useState<string[]>([]);
+  const insets = useSafeAreaInsets();
 
   const handleModeChange = (newMode: 'SINGLE' | 'MULTI', names?: string[]) => {
     setMode(newMode);
@@ -14,7 +15,7 @@ export default function AddScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <SegmentedControl
         values={['단일 추가', '다중 추가']}
         selectedIndex={mode === 'SINGLE' ? 0 : 1}
@@ -26,6 +27,7 @@ export default function AddScreen() {
         bulkNames={bulkNames}
         onModeChange={handleModeChange}
       />
+      <View style={{ height: insets.bottom }} />
     </SafeAreaView>
   );
 }
@@ -37,7 +39,7 @@ const styles = StyleSheet.create({
   },
   segmentedControl: {
     marginHorizontal: 16,
-    marginTop: 40,
+    marginTop: 16,
     marginBottom: 16,
   },
 }); 

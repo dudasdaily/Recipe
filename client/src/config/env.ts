@@ -7,7 +7,7 @@ import Constants from 'expo-constants';
 class EnvConfig {
   // API 설정
   static get API_BASE_URL(): string {
-    return process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+    return process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
   }
 
   static get API_VERSION(): string {
@@ -15,7 +15,7 @@ class EnvConfig {
   }
 
   static get FULL_API_URL(): string {
-    return `${this.API_BASE_URL}/${this.API_VERSION}`;
+    return this.API_BASE_URL; // 이미 v1이 포함되어 있음
   }
 
   // 환경 구분
@@ -31,9 +31,9 @@ class EnvConfig {
     return this.NODE_ENV === 'production';
   }
 
-  // Firebase 설정
+  // Firebase 설정 (React Native/Expo용)
   static get FIREBASE_CONFIG() {
-    return {
+    const config = {
       apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
       projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
@@ -41,6 +41,19 @@ class EnvConfig {
       messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
     };
+    
+    // 개발 모드에서는 설정 검증
+    if (this.IS_DEVELOPMENT) {
+      const missingKeys = Object.entries(config)
+        .filter(([key, value]) => !value)
+        .map(([key]) => key);
+        
+      if (missingKeys.length > 0) {
+        console.warn('⚠️ Firebase 설정 누락:', missingKeys);
+      }
+    }
+    
+    return config;
   }
 
   // 푸시 알림 설정
@@ -104,6 +117,7 @@ class EnvConfig {
     console.log(`- Log Level: ${this.LOG_LEVEL}`);
     console.log(`- Push Notifications: ${this.PUSH_NOTIFICATION_ENABLED}`);
     console.log(`- App Version: ${this.APP_VERSION}`);
+    console.log(`- Firebase Project ID: ${this.FIREBASE_CONFIG.projectId || 'NOT_SET'}`);
   }
 }
 

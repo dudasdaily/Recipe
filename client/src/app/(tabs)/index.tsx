@@ -7,6 +7,7 @@ import { SearchBar } from '@/components/ingredients/SearchBar';
 import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
 import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Ingredient } from '@/types/api';
 
 const EXPIRY_THRESHOLD_DAYS = 7;
@@ -27,10 +28,23 @@ export default function HomeScreen() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  
+  const insets = useSafeAreaInsets();
 
-  const { data, isLoading } = useIngredients();
+  const { data, isLoading, error, refetch } = useIngredients();
   const { mutate: deleteMutate } = useDeleteIngredient();
   const ingredients = data || [];
+
+  // 디버깅용 로그
+  useEffect(() => {
+    console.log('🏠 홈 화면 - 식재료 데이터 상태:', {
+      isLoading,
+      hasData: !!data,
+      dataLength: data?.length || 0,
+      hasError: !!error,
+      error: error?.message || null,
+    });
+  }, [data, isLoading, error]);
 
   const filteredIngredients = useMemo(() => {
     return ingredients.filter(ingredient => {
@@ -89,19 +103,41 @@ export default function HomeScreen() {
     setEditingIngredient(null);
   };
 
+  // 재시도 함수
+  const handleRetry = () => {
+    console.log('🔄 홈 화면 - 데이터 재시도 요청');
+    refetch();
+  };
+
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>식재료 목록을 불러오는 중...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Ionicons name="warning-outline" size={64} color="#ff6b6b" />
+        <Text style={styles.errorTitle}>데이터를 불러올 수 없습니다</Text>
+        <Text style={styles.errorMessage}>
+          {error?.message || '알 수 없는 오류가 발생했습니다'}
+        </Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+          <Text style={styles.retryButtonText}>다시 시도</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
         stickyHeaderIndices={[0]}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 50 }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.stickyHeader}>
@@ -226,7 +262,7 @@ const styles = StyleSheet.create({
   },
   stickyHeader: {
     backgroundColor: '#fff',
-    paddingTop: 24,
+    paddingTop: 16,
     paddingBottom: 4,
     zIndex: 10,
   },
@@ -326,5 +362,39 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     width: '100%',
     maxWidth: 400,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ff6b6b',
+    marginTop: 20,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginHorizontal: 20,
+    marginTop: 10,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    marginTop: 20,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

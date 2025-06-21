@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
+import { apiClient } from './client';
 
 export async function analyzeIngredientImage(imageUri: string): Promise<any> {
   const formData = new FormData();
@@ -11,10 +9,10 @@ export async function analyzeIngredientImage(imageUri: string): Promise<any> {
     type: 'image/jpeg',
   } as any);
 
-  const response = await axios.post(`${API_BASE_URL}/vision/analyze`, formData, {
+  const result = await apiClient.post('/vision/analyze', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
-  return response.data;
+  return result;
 } 

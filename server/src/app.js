@@ -25,11 +25,11 @@ app.use(express.urlencoded({ extended: true }));
 // 정적 파일 제공
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// API 라우트
+// API 라우트 - 모든 API를 /api/v1/ 경로로 통일
 app.use('/api/v1/ingredients', ingredientRoutes);
 app.use('/api/v1/vision', visionRoutes);
 app.use('/api/v1/ocr', ocrRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api', errorLogRoutes);
 
 // 에러 핸들링 미들웨어

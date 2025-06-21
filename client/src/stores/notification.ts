@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerFCMToken, getNotificationSettings, saveNotificationSettings } from '../services/api/notifications';
 import { getFCMToken } from '../config/firebase';
-import { NotificationSettings, NotificationHistory } from '../types/api';
+import { NotificationSettings, NotificationHistory, NotificationSettingsServerResponse } from '../types/api';
 
 type NotificationState = {
   enabled: boolean;
@@ -56,6 +56,7 @@ export const useNotificationStore = create<NotificationState & NotificationActio
       registerTokenWithServer: async () => {
         const { fcmToken } = get();
         if (!fcmToken) {
+          console.warn('FCM 토큰이 없어 서버 등록을 건너뜁니다.');
           set({ error: 'FCM 토큰이 없습니다.' });
           return;
         }
@@ -73,8 +74,11 @@ export const useNotificationStore = create<NotificationState & NotificationActio
           });
           
           set({ isTokenRegistered: true });
+          console.log('✅ FCM 토큰 서버 등록 성공');
         } catch (error: any) {
-          set({ error: error.message || '토큰 등록에 실패했습니다.' });
+          const errorMessage = error.message || '토큰 등록에 실패했습니다.';
+          console.error('❌ FCM 토큰 서버 등록 실패:', errorMessage);
+          set({ error: errorMessage });
         } finally {
           set({ isLoading: false });
         }
@@ -85,11 +89,15 @@ export const useNotificationStore = create<NotificationState & NotificationActio
         try {
           const response = await getNotificationSettings();
           if (response.success && response.data) {
-            const settings = response.data;
+            const settings = response.data as unknown as NotificationSettingsServerResponse;
+            
+            // 안전한 방법으로 notify_days 처리
+            const notifyDays = Array.isArray(settings.notify_days) ? settings.notify_days : [];
+            
             set({
-              enabled: settings.isEnabled,
-              notificationTime: settings.notifyTime,
-              notificationDays: settings.notifyDays.map(day => {
+              enabled: settings.is_enabled || false,
+              notificationTime: settings.notify_time ? settings.notify_time.substring(0, 5) : '09:00', // HH:mm:ss -> HH:mm
+              notificationDays: notifyDays.map((day: string) => {
                 const dayMap: { [key: string]: number } = {
                   'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3,
                   'THU': 4, 'FRI': 5, 'SAT': 6
@@ -97,9 +105,16 @@ export const useNotificationStore = create<NotificationState & NotificationActio
                 return dayMap[day] ?? 0;
               }),
             });
+            console.log('✅ 서버에서 알림 설정 로드 성공:', {
+              enabled: settings.is_enabled,
+              notificationTime: settings.notify_time,
+              notificationDays: notifyDays,
+            });
           }
         } catch (error: any) {
-          set({ error: error.message || '설정을 불러오는데 실패했습니다.' });
+          const errorMessage = error.message || '설정을 불러오는데 실패했습니다.';
+          console.error('❌ 서버 알림 설정 로드 실패:', errorMessage);
+          set({ error: errorMessage });
         } finally {
           set({ isLoading: false });
         }
@@ -119,8 +134,11 @@ export const useNotificationStore = create<NotificationState & NotificationActio
             notifyDays: notificationDays.map(day => dayMap[day] ?? 'MON'),
             isEnabled: enabled,
           });
+          console.log('✅ 서버에 알림 설정 저장 성공');
         } catch (error: any) {
-          set({ error: error.message || '설정 저장에 실패했습니다.' });
+          const errorMessage = error.message || '설정 저장에 실패했습니다.';
+          console.error('❌ 서버 알림 설정 저장 실패:', errorMessage);
+          set({ error: errorMessage });
         } finally {
           set({ isLoading: false });
         }
@@ -136,22 +154,29 @@ export const useNotificationStore = create<NotificationState & NotificationActio
           currentHistoryCount: notificationHistory.length
         });
         
-        // 중복 체크: 최근 10개 내에 같은 title/body/type 조합이 있으면 저장하지 않음
-        const duplicateIndex = notificationHistory.slice(0, 10).findIndex((item) =>
-          item.title === notification.title &&
-          item.body === notification.body &&
-          item.type === notification.type
-        );
+        // 중복 체크 최적화: 최근 5개만 검사하고 시간차도 고려
+        const recentHistory = notificationHistory.slice(0, 5);
+        const duplicateIndex = recentHistory.findIndex((item) => {
+          const isSameContent = item.title === notification.title &&
+                              item.body === notification.body &&
+                              item.type === notification.type;
+          
+          // 같은 내용이고 5분 이내에 발생한 알림은 중복으로 처리
+          if (isSameContent) {
+            const timeDiff = new Date().getTime() - new Date(item.sentAt).getTime();
+            const fiveMinutes = 5 * 60 * 1000;
+            return timeDiff < fiveMinutes;
+          }
+          
+          return false;
+        });
         
         if (duplicateIndex !== -1) {
-          const duplicateItem = notificationHistory[duplicateIndex];
+          const duplicateItem = recentHistory[duplicateIndex];
           console.log('🚫 중복 알림 감지, 저장 건너뜀:', {
             title: notification.title,
-            body: notification.body,
-            type: notification.type,
-            duplicateIndex,
-            duplicateItemId: duplicateItem.id,
-            duplicateItemSentAt: duplicateItem.sentAt
+            duplicateItemSentAt: duplicateItem.sentAt,
+            timeDiff: (new Date().getTime() - new Date(duplicateItem.sentAt).getTime()) / 1000 / 60 + '분'
           });
           return;
         }
@@ -167,13 +192,15 @@ export const useNotificationStore = create<NotificationState & NotificationActio
           ...notification,
           id: Date.now(), // 임시 ID 생성
         };
+        
         set({
-          notificationHistory: [newNotification, ...notificationHistory].slice(0, 100), // 최대 100개 유지
+          notificationHistory: [newNotification, ...notificationHistory].slice(0, 50), // 최대 50개 유지
         });
         
-        console.log('💾 알림 히스토리 저장 완료, 총 개수:', notificationHistory.length + 1);
+        console.log('�� 알림 히스토리 저장 완료, 총 개수:', notificationHistory.length + 1);
       },
       clearNotificationHistory: () => {
+        console.log('🗑️ 알림 히스토리 전체 삭제');
         set({ notificationHistory: [] });
       },
       cleanupDuplicateNotifications: () => {
@@ -181,20 +208,24 @@ export const useNotificationStore = create<NotificationState & NotificationActio
         
         console.log('🧹 중복 알림 정리 시작, 현재 개수:', notificationHistory.length);
         
-        // EXPIRY_ALERT 타입을 우선하고, LOCAL_NOTIFICATION 중복 제거
+        // 중복 제거 최적화: Map을 사용하여 성능 개선
         const uniqueHistory: NotificationHistory[] = [];
-        const seenKeys = new Set<string>();
+        const seenKeys = new Map<string, boolean>();
         
         notificationHistory.forEach((item) => {
           const key = `${item.title}|${item.body}|${item.type}`;
           
           // 이미 같은 키가 있으면 건너뛰기 (중복 제거)
           if (seenKeys.has(key)) {
-            console.log('🚫 중복 알림 제거:', { title: item.title, type: item.type, id: item.id });
+            console.log('🚫 중복 알림 제거:', { 
+              title: item.title.substring(0, 20) + '...', 
+              type: item.type, 
+              id: item.id 
+            });
             return;
           }
           
-          seenKeys.add(key);
+          seenKeys.set(key, true);
           uniqueHistory.push(item);
         });
         

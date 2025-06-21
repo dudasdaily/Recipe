@@ -4,8 +4,6 @@ import type {
   GetReceiptResult 
 } from '@/types/api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
-
 /**
  * 영수증 이미지 OCR 처리
  * @param imageUri - 영수증 이미지 URI
@@ -20,22 +18,14 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<OcrReceiptR
       type: 'image/jpeg',
     } as any);
 
-    // FormData 요청이므로 별도 axios 인스턴스 사용
-    const response = await fetch(`${API_BASE_URL}/ocr/receipt`, {
-      method: 'POST',
-      body: formData,
+    // apiClient를 사용하여 FormData 전송 (인터셉터가 response.data를 반환함)
+    const result = await apiClient.post('/ocr/receipt', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || '영수증 처리 중 오류가 발생했습니다.');
-    }
-
-    return data as OcrReceiptResult;
+    return result as unknown as OcrReceiptResult;
   } catch (error) {
     console.error('[OCR Error]', error);
     
