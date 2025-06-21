@@ -7,26 +7,25 @@ import Constants from 'expo-constants';
 class EnvConfig {
   // API 설정
   static get API_BASE_URL(): string {
+    // Expo Config에서 환경 변수 가져오기 (우선순위 1)
+    const configUrl = Constants.expoConfig?.extra?.apiBaseUrl;
+    // process.env에서 직접 가져오기 (우선순위 2)
     const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-    
-    // 임시: 하드코딩된 개발 서버 URL
-    const developmentUrl = 'http://172.20.10.2:3000/api/v1';
+    // 기본값 (우선순위 3)
     const defaultUrl = 'http://localhost:3000/api/v1';
     
+    const finalUrl = configUrl || envUrl || defaultUrl;
+    
     // 환경 변수 디버깅
-    if (__DEV__) {
+    if (__DEV__ && this.DEBUG_MODE) {
       console.log('🔍 API_BASE_URL 환경변수 체크:');
-      console.log('- EXPO_PUBLIC_API_BASE_URL:', envUrl);
-      console.log('- 개발 서버 URL:', developmentUrl);
-      console.log('- 기본값:', defaultUrl);
+      console.log('- Constants.expoConfig.extra.apiBaseUrl:', configUrl);
+      console.log('- process.env.EXPO_PUBLIC_API_BASE_URL:', envUrl);
+      console.log('- 기본값 (fallback):', defaultUrl);
+      console.log('- 최종 선택된 URL:', finalUrl);
     }
     
-    // 개발 모드에서는 지정된 개발 서버 URL 사용
-    if (__DEV__) {
-      return envUrl || developmentUrl;
-    }
-    
-    return envUrl || defaultUrl;
+    return finalUrl;
   }
 
   static get API_VERSION(): string {
@@ -53,9 +52,9 @@ class EnvConfig {
   // Firebase 설정 (React Native/Expo용)
   static get FIREBASE_CONFIG() {
     const config = {
-      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyA4CotimuGNCfppbfONHM3VaAOIccyzfpM',
+      apiKey: Constants.expoConfig?.extra?.firebaseApiKey || process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyA4CotimuGNCfppbfONHM3VaAOIccyzfpM',
       authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'cookingingredientmanager.firebaseapp.com',
-      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'cookingingredientmanager',
+      projectId: Constants.expoConfig?.extra?.firebaseProjectId || process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'cookingingredientmanager',
       storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'cookingingredientmanager.firebasestorage.app',
       messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '981367162693',
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:981367162693:android:6c7e013bd64146ecc9a02c',
@@ -82,7 +81,7 @@ class EnvConfig {
 
   // 디버그 설정
   static get DEBUG_MODE(): boolean {
-    return process.env.EXPO_PUBLIC_DEBUG_MODE === 'true' || __DEV__;
+    return Constants.expoConfig?.extra?.debugMode || process.env.EXPO_PUBLIC_DEBUG_MODE === 'true' || __DEV__;
   }
 
   static get LOG_LEVEL(): 'debug' | 'info' | 'warn' | 'error' {
@@ -109,18 +108,27 @@ class EnvConfig {
 
   // 환경 변수 검증
   static validate(): void {
-    const required = [
-      'EXPO_PUBLIC_API_BASE_URL',
-    ];
+    // 프로덕션에서만 필수 환경 변수 체크
+    if (this.IS_PRODUCTION) {
+      const required = [
+        'EXPO_PUBLIC_API_BASE_URL',
+        'EXPO_PUBLIC_FIREBASE_API_KEY',
+        'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+      ];
 
-    const missing = required.filter(key => !process.env[key]);
-    
-    if (missing.length > 0) {
-      console.warn('⚠️ Missing required environment variables:', missing);
-      console.warn('🔧 Using fallback values for development');
+      const missing = required.filter(key => !process.env[key]);
       
-      if (this.IS_PRODUCTION) {
-        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+      if (missing.length > 0) {
+        throw new Error(`Missing required environment variables for production: ${missing.join(', ')}`);
+      }
+    }
+    
+    // 개발 모드에서는 경고만 출력
+    if (this.IS_DEVELOPMENT && this.DEBUG_MODE) {
+      const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+      if (!envUrl) {
+        console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL 환경 변수가 설정되지 않았습니다.');
+        console.warn('🔧 기본값 localhost:3000을 사용합니다.');
       }
     }
   }

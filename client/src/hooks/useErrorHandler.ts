@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Alert } from 'react-native';
+import { apiClient } from '@/services/api/client';
 import EnvConfig from '../config/env';
 
 // 에러 로그 전송 함수
@@ -17,19 +18,8 @@ const sendErrorLog = async (error: Error, context?: string) => {
 
     console.log('에러 로그 전송 중:', errorData);
 
-    const response = await fetch(`${EnvConfig.API_BASE_URL}/error-log`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(errorData),
-    });
-
-    if (response.ok) {
-      console.log('에러 로그 전송 성공');
-    } else {
-      console.error('에러 로그 전송 실패:', response.status);
-    }
+    await apiClient.post('/error-log', errorData);
+    console.log('에러 로그 전송 성공');
   } catch (logError) {
     console.error('에러 로그 전송 중 오류:', logError);
   }

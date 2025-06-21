@@ -30,7 +30,7 @@ app.use('/api/v1/ingredients', ingredientRoutes);
 app.use('/api/v1/vision', visionRoutes);
 app.use('/api/v1/ocr', ocrRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api', errorLogRoutes);
+app.use('/api/v1', errorLogRoutes);
 
 // 에러 핸들링 미들웨어
 app.use((err, req, res, next) => {
