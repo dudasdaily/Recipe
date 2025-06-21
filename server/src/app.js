@@ -11,6 +11,7 @@ const ingredientRoutes = require('./routes/ingredientRoutes');
 const visionRoutes = require('./routes/visionRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const errorLogRoutes = require('./routes/errorLog');
 
 const NotificationScheduler = require('./services/NotificationScheduler');
 
@@ -29,6 +30,7 @@ app.use('/api/v1/ingredients', ingredientRoutes);
 app.use('/api/v1/vision', visionRoutes);
 app.use('/api/v1/ocr', ocrRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api', errorLogRoutes);
 
 // 에러 핸들링 미들웨어
 app.use((err, req, res, next) => {
