@@ -59,7 +59,7 @@ export const IngredientCard = ({
   // 이미지 URL이 있으면 사용, 없으면 placeholder
   const imageUrl = ingredient.imageUrl
     ? { uri: ingredient.imageUrl }
-    : require('../../../../assets/images/partial-react-logo.png');
+    : require('../../../../assets/images/icon.png');
 
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
