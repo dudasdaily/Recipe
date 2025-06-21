@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, TextInput } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { View, TouchableOpacity, Text, StyleSheet, TextInput, Platform, Modal } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 
 function formatDate(date: Date) {
@@ -22,9 +22,10 @@ type Props = {
 };
 
 export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 선택', style }: Props) {
-  const [visible, setVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [input, setInput] = useState('');
   const [touched, setTouched] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   // 날짜 문자열을 YYYY-MM-DD 형식으로 변환하는 함수
   const formatDateValue = (dateString: string) => {
@@ -42,7 +43,16 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
 
   // value가 바뀔 때만 input을 동기화
   useEffect(() => {
-    setInput(formatDateValue(value || ''));
+    const formattedValue = formatDateValue(value || '');
+    setInput(formattedValue);
+    
+    // 유효한 날짜라면 selectedDate도 업데이트
+    if (isValidDateString(formattedValue)) {
+      setSelectedDate(new Date(formattedValue));
+    } else if (!formattedValue) {
+      // 값이 없으면 내일 날짜로 기본 설정
+      setSelectedDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    }
   }, [value]);
 
   const handleInputChange = (text: string) => {
@@ -58,15 +68,52 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
     }
   };
 
-  const handleConfirm = (date: Date) => {
-    setVisible(false);
-    const str = formatDate(date);
-    setInput(str);
-    setTouched(false);
-    onChange(str);
+  const handleDatePickerChange = (event: any, date?: Date) => {
+    // iOS와 Android 모두에서 모달 닫기
+    setShowDatePicker(false);
+    
+    if (date) {
+      const dateString = formatDate(date);
+      setSelectedDate(date);
+      setInput(dateString);
+      setTouched(false);
+      onChange(dateString);
+    }
+  };
+
+  const openDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
+  const closeDatePicker = () => {
+    setShowDatePicker(false);
   };
 
   const showError = touched && input && !isValidDateString(input);
+
+  // iOS 스타일 모달 컴포넌트
+  const IOSDatePickerModal = () => (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={showDatePicker}
+      onRequestClose={closeDatePicker}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={handleDatePickerChange}
+            style={styles.iosDatePicker}
+            minimumDate={new Date()}
+            textColor="#000"
+          />
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={[styles.row, style]}>
@@ -83,18 +130,25 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
       />
       <TouchableOpacity
         style={styles.iconBtn}
-        onPress={() => setVisible(true)}
+        onPress={openDatePicker}
         activeOpacity={0.85}
       >
         <Ionicons name="calendar-outline" size={20} color="#007AFF" />
       </TouchableOpacity>
-      <DateTimePickerModal
-        isVisible={visible}
-        mode="date"
-        onConfirm={handleConfirm}
-        onCancel={() => setVisible(false)}
-        display="default"
-      />
+      
+      {Platform.OS === 'ios' ? (
+        <IOSDatePickerModal />
+      ) : (
+        showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={handleDatePickerChange}
+            minimumDate={new Date()}
+          />
+        )
+      )}
     </View>
   );
 }
@@ -123,5 +177,22 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 8,
     backgroundColor: '#F2F4F7',
+  },
+  // iOS 모달 스타일
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Safe area 고려
+  },
+  iosDatePicker: {
+    height: 200,
+    marginTop: 10,
   },
 }); 
