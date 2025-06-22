@@ -109,19 +109,16 @@ export const useLocalNotificationService = () => {
   const scheduleNotification = useCallback(async () => {
     // 중복 스케줄링 방지
     if (isSchedulingRef.current) {
-      console.log('⏸️ 이미 스케줄링 중이므로 건너뜀');
       return;
     }
 
     // 설정 변경 확인 (중복 스케줄링 방지)
     const currentSettings = `${enabled}-${time}-${daysThreshold}`;
     if (lastScheduledSettingsRef.current === currentSettings && enabled) {
-      console.log('⏸️ 설정이 변경되지 않아 스케줄링 건너뜀');
       return;
     }
 
     if (!enabled) {
-      console.log('📴 알림이 비활성화되어 있음');
       await Notifications.cancelAllScheduledNotificationsAsync();
       lastScheduledSettingsRef.current = currentSettings;
       return;
@@ -132,7 +129,6 @@ export const useLocalNotificationService = () => {
     try {
       const hasPermission = await requestPermissions();
       if (!hasPermission) {
-        console.log('❌ 알림 권한이 없음');
         return;
       }
 
@@ -176,20 +172,14 @@ export const useLocalNotificationService = () => {
           },
         });
 
-        console.log(`✅ 로컬 알림 스케줄됨: ${firstNotificationTime.toLocaleString()}`);
-        console.log(`📝 알림 내용: ${message}`);
-        console.log(`🆔 알림 ID: ${notificationId}`);
-        
         // 마지막 알림 ID 저장
         lastNotificationIdRef.current = notificationId;
-      } else {
-        console.log('📭 현재 알림할 유통기한 관련 재료가 없음');
-      }
+              }
 
       // 설정 저장
       lastScheduledSettingsRef.current = currentSettings;
     } catch (error) {
-      console.error('❌ 로컬 알림 스케줄링 실패:', error);
+      // 알림 스케줄링 실패 시 무시
     } finally {
       isSchedulingRef.current = false;
     }
@@ -213,43 +203,12 @@ export const useLocalNotificationService = () => {
         trigger: null, // 즉시 발송
       });
 
-      console.log('✅ 테스트 알림 발송 완료');
     } catch (error) {
-      console.error('❌ 테스트 알림 발송 실패:', error);
+      // 테스트 알림 발송 실패 시 무시
     }
   }, [ingredients, requestPermissions, analyzeIngredients, createNotificationMessage]);
 
-  // 모든 알림 취소
-  const cancelAllNotifications = useCallback(async () => {
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      lastScheduledSettingsRef.current = ''; // 설정 초기화
-      lastNotificationIdRef.current = ''; // 알림 ID 초기화
-      console.log('🗑️ 모든 알림 취소됨');
-    } catch (error) {
-      console.error('❌ 알림 취소 실패:', error);
-    }
-  }, []);
 
-  // 현재 스케줄된 알림 확인 (디버깅용)
-  const checkScheduledNotifications = useCallback(async () => {
-    try {
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      console.log('📋 현재 스케줄된 알림:', {
-        총개수: scheduledNotifications.length,
-        알림목록: scheduledNotifications.map(notification => ({
-          id: notification.identifier,
-          title: notification.content.title,
-          body: notification.content.body,
-          trigger: notification.trigger,
-        }))
-      });
-      return scheduledNotifications;
-    } catch (error) {
-      console.error('❌ 스케줄된 알림 확인 실패:', error);
-      return [];
-    }
-  }, []);
 
   // 알림 수신 리스너 (매일 반복을 위한) - 단일 인스턴스 보장
   useEffect(() => {
@@ -266,17 +225,13 @@ export const useLocalNotificationService = () => {
       
       // 유통기한 알림이 수신되면 다음 날 알림을 다시 스케줄
       if (data?.type === 'EXPIRY_ALERT' && enabled) {
-        console.log(`📱 유통기한 알림 수신 (ID: ${notificationId}), 24시간 후 알림 재스케줄링 시작`);
-        
         // 중복 수신 방지 - 같은 알림 ID면 무시
         if (lastNotificationIdRef.current === notificationId) {
-          console.log('⏸️ 동일한 알림 ID로 이미 처리됨, 무시');
           return;
         }
         
         // 중복 스케줄링 방지 - 이미 스케줄링 중이면 무시
         if (isSchedulingRef.current) {
-          console.log('⏸️ 이미 재스케줄링 중이므로 무시');
           return;
         }
         
@@ -313,7 +268,6 @@ export const useLocalNotificationService = () => {
     if (lastScheduledSettingsRef.current !== currentSettings) return;
 
     const timeoutId = setTimeout(() => {
-      console.log('📦 재료 데이터 변경으로 인한 알림 내용 업데이트');
       lastScheduledSettingsRef.current = ''; // 설정 초기화
       scheduleNotification();
     }, 1000); // 1초 디바운싱
@@ -324,8 +278,6 @@ export const useLocalNotificationService = () => {
   return {
     scheduleNotification,
     sendTestNotification,
-    cancelAllNotifications,
-    checkScheduledNotifications,
     requestPermissions,
   };
 }; 

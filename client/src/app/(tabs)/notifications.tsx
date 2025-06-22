@@ -31,8 +31,6 @@ export default function NotificationsScreen() {
 
   const {
     sendTestNotification,
-    cancelAllNotifications,
-    checkScheduledNotifications,
     requestPermissions,
   } = useLocalNotificationService();
 
@@ -77,32 +75,7 @@ export default function NotificationsScreen() {
     Alert.alert('알림 테스트', '테스트 알림이 발송되었습니다!');
   };
 
-  // 스케줄된 알림 확인
-  const handleCheckScheduledNotifications = async () => {
-    const notifications = await checkScheduledNotifications();
-    Alert.alert(
-      '스케줄된 알림',
-      `현재 ${notifications.length}개의 알림이 스케줄되어 있습니다.\n콘솔에서 상세 정보를 확인하세요.`
-    );
-  };
 
-  // 모든 알림 취소
-  const handleCancelAllNotifications = () => {
-    Alert.alert(
-      '알림 취소',
-      '모든 스케줄된 알림을 취소하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        { 
-          text: '확인', 
-          onPress: async () => {
-            await cancelAllNotifications();
-            Alert.alert('완료', '모든 알림이 취소되었습니다.');
-          }
-        },
-      ]
-    );
-  };
 
   // 현재 시간을 Date 객체로 변환
   const getCurrentTimeDate = () => {
@@ -185,39 +158,17 @@ export default function NotificationsScreen() {
           </View>
         </View>
 
-        {/* 테스트 및 관리 버튼들 */}
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={[styles.actionButton, !enabled && styles.disabledButton]}
-            onPress={handleTestNotification}
-            disabled={!enabled}
-          >
-            <Ionicons name="notifications-outline" size={20} color={!enabled ? '#999' : '#007AFF'} />
-            <Text style={[styles.actionButtonText, !enabled && styles.disabledText]}>
-              테스트 알림
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCheckScheduledNotifications}
-          >
-            <Ionicons name="list-outline" size={20} color="#007AFF" />
-            <Text style={styles.actionButtonText}>
-              알림 확인
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCancelAllNotifications}
-          >
-            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-            <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>
-              모두 취소
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* 테스트 버튼 */}
+        <TouchableOpacity
+          style={[styles.testButton, !enabled && styles.disabledButton]}
+          onPress={handleTestNotification}
+          disabled={!enabled}
+        >
+          <Ionicons name="notifications-outline" size={20} color={!enabled ? '#999' : '#007AFF'} />
+          <Text style={[styles.testButtonText, !enabled && styles.disabledText]}>
+            테스트 알림 보내기
+          </Text>
+        </TouchableOpacity>
 
         {/* 알림 정보 */}
         <View style={styles.infoContainer}>
@@ -365,26 +316,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  buttonGroup: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
+  testButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
-    padding: 12,
+    padding: 16,
     borderRadius: 12,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    backgroundColor: '#f0f8ff',
+    marginBottom: 24,
+    gap: 8,
   },
-  actionButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
+  testButtonText: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#007AFF',
   },
   disabledText: {
     color: '#999',
