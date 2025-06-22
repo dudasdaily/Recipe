@@ -225,17 +225,18 @@ export function BulkModeForm() {
             }
           />
         </View>
-        <SafeAreaView style={styles.footerArea}>
+        
+        <View style={styles.footerArea}>
           <View style={styles.footer}>
             <Button
               title="모두 추가"
               onPress={handleSubmit}
               disabled={isPending}
               loading={isPending}
-              style={styles.submitButton}
+              style={styles.submitButtonFixed}
             />
           </View>
-        </SafeAreaView>
+        </View>
       </KeyboardAvoidingView>
 
       {/* 영수증 스캔 플로우 */}
@@ -308,8 +309,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E5E7',
   },
   footer: {
-    padding: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
   },
   addButtonContainer: {
     alignItems: 'center',
@@ -338,8 +340,10 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     lineHeight: 24,
   },
-  submitButton: {
-    // 기본 버튼 스타일 사용
+  submitButtonFixed: {
+    height: 40,
+    paddingHorizontal: 24,
+    borderRadius: 20,
   },
   emptyContainer: {
     flex: 1,
