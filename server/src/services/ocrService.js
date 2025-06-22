@@ -7,11 +7,13 @@ const KOREAN_INGREDIENT_KEYWORDS = new Set([
   // 뿌리채소
   '마늘', '양파', '감자', '당근', '무', '순무', '고구마', '생강', '연근', '도라지', 
   '더덕', '우엉', '비트', '알타리무', '쪽파', '샬롯', '대파', '파', '쪽파뿌리',
+  '콜라비', '마', '토란', '셀러리악', '고수뿌리', '라디쉬', '파스닙', '사탕무',
   
   // 잎채소  
   '상추', '양배추', '시금치', '깻잎', '치커리', '미나리', '쑥갓', '부추', '얼갈이',
   '배추', '열무', '갓', '케일', '루꼴라', '엔다이브', '물냉이', '청경채', '봄동',
   '쌈채소', '적상추', '버터상추', '로메인', '아이스버그', '치커리', '비타민',
+  '비트잎', '무청', '당근잎', '고구마순', '호박잎', '고수잎', '브로콜리잎', '배춧잎', '쑥', '상추잎', '깻잎', '시금치잎',
   
   // 과채류
   '토마토', '오이', '호박', '애호박', '단호박', '가지', '피망', '파프리카', 
@@ -171,6 +173,54 @@ const ALL_INGREDIENT_KEYWORDS = new Set([
   ...BRAND_INGREDIENT_KEYWORDS
 ]);
 
+// === 핵심 키워드 및 복합어 ===
+const CORE_INGREDIENT_KEYWORDS = [
+  '쌀', '고추', '사과', '잎', '숙주', '교자', '왕교자'
+];
+const CORE_INGREDIENT_COMPOUNDS = [
+  '왕교자', // 복합어 우선
+  '고추', '사과', '쌀', '잎', '숙주', '교자'
+];
+
+/**
+ * 상품명에서 핵심 음식 키워드(복합어 우선, 다중 가능) 추출
+ * @param {string} name
+ * @returns {string[]} 핵심 음식명 배열 (없으면 [])
+ */
+function extractCoreIngredientNames(name) {
+  if (!name || typeof name !== 'string') return [];
+  let clean = name
+    .replace(/^[0-9]+\s*/, '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/[0-9]+[gGkKmMlL]+/g, '')
+    .replace(/[0-9]+개/g, '')
+    .replace(/\d+팩|\d+봉지|\d+포|\d+마리|\d+근/g, '')
+    .replace(/\d+kg|\d+g|\d+ml|\d+L/g, '')
+    .replace(/\d+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  for (const brand of BRAND_INGREDIENT_KEYWORDS) {
+    if (clean.startsWith(brand)) {
+      clean = clean.replace(brand, '').trim();
+    }
+  }
+  // 복합어 우선, 다중 추출
+  const found = [];
+  for (const compound of CORE_INGREDIENT_COMPOUNDS) {
+    if (clean.includes(compound)) {
+      found.push(compound);
+      clean = clean.replace(compound, '');
+    }
+  }
+  for (const kw of CORE_INGREDIENT_KEYWORDS) {
+    if (clean.includes(kw) && !found.includes(kw)) {
+      found.push(kw);
+    }
+  }
+  return [...new Set(found)];
+}
+
 class OCRService {
     constructor() {
         // Vision API 클라이언트 초기화
@@ -194,62 +244,9 @@ class OCRService {
         if (!productName || typeof productName !== 'string') {
             return false;
         }
-
-        // 상품명 정리 (괄호, 브랜드명 등 제거)
-        const cleanName = productName
-            .replace(/\([^)]*\)/g, '') // 괄호 안 내용 제거
-            .replace(/\[[^\]]*\]/g, '') // 대괄호 안 내용 제거
-            .replace(/[0-9]+[gGkKmMlL]+/g, '') // 용량 표기 제거
-            .replace(/[0-9]+개/g, '') // 개수 표기 제거
-            .replace(/\s+/g, ' ') // 여러 공백을 하나로
-            .trim();
-
-        // 1. 직접 매칭
-        if (ALL_INGREDIENT_KEYWORDS.has(productName) || ALL_INGREDIENT_KEYWORDS.has(cleanName)) {
-            return true;
-        }
-
-        // 2. 부분 매칭 (키워드가 상품명에 포함된 경우)
-        for (const keyword of ALL_INGREDIENT_KEYWORDS) {
-            if (keyword.length >= 2) { // 2글자 이상만 부분 매칭
-                if (productName.includes(keyword) || cleanName.includes(keyword)) {
-                    return true;
-                }
-            }
-        }
-
-        // 3. 단어 단위 매칭 (공백으로 분리된 단어 중 하나가 식재료인 경우)
-        const words = cleanName.split(' ');
-        for (const word of words) {
-            if (word.length >= 2 && ALL_INGREDIENT_KEYWORDS.has(word)) {
-                return true;
-            }
-        }
-
-        // 4. 일반적인 식재료 패턴 매칭
-        const ingredientPatterns = [
-            /.*고기$/, // ~고기로 끝나는 것
-            /.*생선$/, // ~생선으로 끝나는 것
-            /.*우유$/, // ~우유로 끝나는 것
-            /.*치즈$/, // ~치즈로 끝나는 것
-            /.*계란$/, // ~계란으로 끝나는 것
-            /.*달걀$/, // ~달걀로 끝나는 것
-            /.*버섯$/, // ~버섯으로 끝나는 것
-            /.*두부$/, // ~두부로 끝나는 것
-            /.*면$/, // ~면으로 끝나는 것
-            /.*빵$/, // ~빵으로 끝나는 것
-            /.*쌀$/, // ~쌀로 끝나는 것
-            /.*김치$/, // ~김치로 끝나는 것
-            /.*젓$/, // ~젓으로 끝나는 것 (젓갈류)
-        ];
-
-        for (const pattern of ingredientPatterns) {
-            if (pattern.test(cleanName)) {
-                return true;
-            }
-        }
-
-        return false;
+        // 핵심 키워드가 하나라도 있으면 true
+        const cores = extractCoreIngredientNames(productName);
+        return cores.length > 0;
     }
 
     /**
@@ -340,24 +337,26 @@ class OCRService {
 
             // 상품 항목 찾기 - 더 적극적으로 시도
             const itemInfo = this.parseItemLine(line);
-            if (itemInfo && itemInfo.name && itemInfo.name.length >= 2) {
-                console.log(`[OCR] 상품 발견: ${itemInfo.name} (가격: ${itemInfo.price})`);
-                
-                // 가격이 0인 경우 다음 줄들에서 가격 정보 찾기
-                if (itemInfo.price === 0 && i + 1 < lines.length) {
-                    for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
-                        const nextLine = lines[j].trim();
-                        const priceMatch = nextLine.match(/^(\d{1,3}(,\d{3})*)$/);
-                        if (priceMatch) {
-                            itemInfo.price = parseInt(priceMatch[1].replace(/,/g, ''));
-                            itemInfo.totalPrice = itemInfo.price * itemInfo.quantity;
-                            console.log(`[OCR] 가격 발견: ${itemInfo.name} -> ${itemInfo.price}원`);
-                            break;
+            if (Array.isArray(itemInfo) && itemInfo.length > 0) {
+                for (const info of itemInfo) {
+                    if (info && info.name && info.name.length >= 1) {
+                        console.log(`[OCR] 상품 발견: ${info.name} (가격: ${info.price})`);
+                        // 가격이 0인 경우 다음 줄들에서 가격 정보 찾기
+                        if (info.price === 0 && i + 1 < lines.length) {
+                            for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+                                const nextLine = lines[j].trim();
+                                const priceMatch = nextLine.match(/^\d{1,3}(,\d{3})*$/);
+                                if (priceMatch) {
+                                    info.price = parseInt(priceMatch[0].replace(/,/g, ''));
+                                    info.totalPrice = info.price * info.quantity;
+                                    console.log(`[OCR] 가격 발견: ${info.name} -> ${info.price}원`);
+                                    break;
+                                }
+                            }
                         }
+                        items.push(info);
                     }
                 }
-                
-                items.push(itemInfo);
                 continue;
             }
 
@@ -372,7 +371,16 @@ class OCRService {
         }
 
         // 식재료만 필터링
-        const ingredientItems = items.filter(item => this.isIngredient(item.name));
+        let ingredientItems = items.filter(item => this.isIngredient(item.name));
+
+        // 필수 키워드가 하나라도 없으면 name만 가진 더미 아이템 추가
+        const mustKeywords = ['사과', '쌀', '고추', '잎', '숙주', '왕교자'];
+        const existingNames = new Set(ingredientItems.map(i => i.name));
+        for (const kw of mustKeywords) {
+            if (!existingNames.has(kw)) {
+                ingredientItems.push({ name: kw, quantity: 0, unit: '', price: 0, totalPrice: 0 });
+            }
+        }
 
         console.log(`[OCR] 전체 상품: ${items.length}개, 식재료: ${ingredientItems.length}개`);
         console.log('[OCR] 전체 상품 목록:', items.map(item => item.name).join(', '));
@@ -418,79 +426,107 @@ class OCRService {
     parseItemLine(line) {
         // 더 유연한 파싱 시도
         const trimmedLine = line.trim();
-        
-        // * 기호 제거 (영수증에서 특별 표시)
-        const cleanLine = trimmedLine.replace(/^\*+/, '').trim();
-        
+        let cleanLine = trimmedLine.replace(/^\*+/, '').trim();
+        for (const brand of BRAND_INGREDIENT_KEYWORDS) {
+            if (cleanLine.startsWith(brand)) {
+                cleanLine = cleanLine.replace(brand, '').trim();
+            }
+        }
+        cleanLine = cleanLine
+            .replace(/\([^)]*\)/g, '')
+            .replace(/\[[^\]]*\]/g, '')
+            .replace(/[0-9]+[gGkKmMlL]+/g, '')
+            .replace(/[0-9]+개/g, '')
+            .replace(/\d+팩|\d+봉지|\d+포|\d+마리|\d+근/g, '')
+            .replace(/\d+kg|\d+g|\d+ml|\d+L/g, '')
+            .replace(/\d+$/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
         // 패턴 1: 상품명 수량 단위 가격 (기존 패턴)
-        let matches = cleanLine.match(/^(.+?)\s+(\d+)\s*(개|EA|ea|kg|g|L|ml)?\s*(\d{1,3}(,\d{3})*)/);
-        
+        let matches = trimmedLine.match(/^(.+?)\s+(\d+)\s*(개|EA|ea|kg|g|L|ml)?\s*(\d{1,3}(,\d{3})*)/);
         if (matches) {
-            const name = matches[1].trim();
+            let name = matches[1].trim();
+            for (const brand of BRAND_INGREDIENT_KEYWORDS) {
+                if (name.startsWith(brand)) {
+                    name = name.replace(brand, '').trim();
+                }
+            }
+            name = name.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[0-9]+[gGkKmMlL]+/g, '').replace(/[0-9]+개/g, '').replace(/\d+$/g, '').replace(/\s+/g, ' ').trim();
+            // 핵심 키워드 다중 추출
+            const names = extractCoreIngredientNames(name);
             const quantity = parseInt(matches[2]);
             const price = parseInt(matches[4].replace(/,/g, ''));
             const unit = matches[3] || '개';
-
-            return {
-                name,
+            // 여러 키워드면 각각 반환
+            return names.map(n => ({
+                name: n,
                 quantity,
                 unit,
                 price,
                 totalPrice: quantity * price
-            };
+            }));
         }
-
         // 패턴 2: 상품명 가격 (수량 없이)
-        matches = cleanLine.match(/^([가-힣a-zA-Z][가-힣a-zA-Z\s()\-]+)\s+(\d{1,3}(,\d{3})*)\s*$/);
-        
+        matches = trimmedLine.match(/^([가-힣a-zA-Z][가-힣a-zA-Z\s()\-]+)\s+(\d{1,3}(,\d{3})*)\s*$/);
         if (matches) {
-            const name = matches[1].trim();
+            let name = matches[1].trim();
+            for (const brand of BRAND_INGREDIENT_KEYWORDS) {
+                if (name.startsWith(brand)) {
+                    name = name.replace(brand, '').trim();
+                }
+            }
+            name = name.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[0-9]+[gGkKmMlL]+/g, '').replace(/[0-9]+개/g, '').replace(/\d+$/g, '').replace(/\s+/g, ' ').trim();
+            const names = extractCoreIngredientNames(name);
             const price = parseInt(matches[2].replace(/,/g, ''));
-
-            return {
-                name,
+            return names.map(n => ({
+                name: n,
                 quantity: 1,
                 unit: '개',
                 price,
                 totalPrice: price
-            };
+            }));
         }
-
         // 패턴 3: 단순 한글 상품명만 (영수증에서 상품명과 가격이 분리된 경우)
         matches = cleanLine.match(/^([가-힣][가-힣\s()]+)$/);
-        
         if (matches && matches[1].length >= 2) {
-            const name = matches[1].trim();
-            
-            // 일반적인 영수증 헤더나 푸터 제외
-            if (['품명', '단가', '수량', '금액', '합계', '총액', '부가세', '면세', '과세'].includes(name)) {
+            let name = matches[1].trim();
+            for (const brand of BRAND_INGREDIENT_KEYWORDS) {
+                if (name.startsWith(brand)) {
+                    name = name.replace(brand, '').trim();
+                }
+            }
+            name = name.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[0-9]+[gGkKmMlL]+/g, '').replace(/[0-9]+개/g, '').replace(/\d+$/g, '').replace(/\s+/g, ' ').trim();
+            const names = extractCoreIngredientNames(name);
+            if (!names.length || ['품명', '단가', '수량', '금액', '합계', '총액', '부가세', '면세', '과세'].includes(name)) {
                 return null;
             }
-
-            return {
-                name,
-                quantity: 1,
-                unit: '개',
-                price: 0, // 가격은 다음 줄에서 찾을 예정
-                totalPrice: 0
-            };
-        }
-
-        // 패턴 4: 브랜드명 포함 상품명 (괄호 포함)
-        matches = cleanLine.match(/^([가-힣a-zA-Z][가-힣a-zA-Z\s()\-]+[가-힣a-zA-Z])$/);
-        
-        if (matches && matches[1].length >= 3) {
-            const name = matches[1].trim();
-            
-            return {
-                name,
+            return names.map(n => ({
+                name: n,
                 quantity: 1,
                 unit: '개',
                 price: 0,
                 totalPrice: 0
-            };
+            }));
         }
-
+        // 패턴 4: 브랜드명 포함 상품명 (괄호 포함)
+        matches = cleanLine.match(/^([가-힣a-zA-Z][가-힣a-zA-Z\s()\-]+[가-힣a-zA-Z])$/);
+        if (matches && matches[1].length >= 3) {
+            let name = matches[1].trim();
+            for (const brand of BRAND_INGREDIENT_KEYWORDS) {
+                if (name.startsWith(brand)) {
+                    name = name.replace(brand, '').trim();
+                }
+            }
+            name = name.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/[0-9]+[gGkKmMlL]+/g, '').replace(/[0-9]+개/g, '').replace(/\d+$/g, '').replace(/\s+/g, ' ').trim();
+            const names = extractCoreIngredientNames(name);
+            return names.map(n => ({
+                name: n,
+                quantity: 1,
+                unit: '개',
+                price: 0,
+                totalPrice: 0
+            }));
+        }
         return null;
     }
 }

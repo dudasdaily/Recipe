@@ -16,11 +16,14 @@ import { analyzeIngredientImage } from '@/services/api/vision';
 import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
 import { useReceiptStore } from '@/stores/receipt';
 import { Animated as RNAnimated } from 'react-native';
+import { ImageRecognitionActions } from '../ImageRecognitionActions';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
 type BulkModeFormProps = {
   showBulkSettings?: boolean;
+  onImageFromParent?: string | null;
+  onImageProcessed?: () => void;
 };
 
 const initialItem: BulkFormData = {
@@ -32,7 +35,11 @@ const initialItem: BulkFormData = {
   expiry_date: '',
 };
 
-export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
+export function BulkModeForm({ 
+  showBulkSettings = false, 
+  onImageFromParent = null,
+  onImageProcessed 
+}: BulkModeFormProps) {
   const [items, setItems] = useState<(BulkFormData & { _key?: string })[]>([{ ...initialItem, _key: String(Date.now()) }]);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
@@ -196,6 +203,14 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
     }
   }, [items.length]);
 
+  // 상위 컴포넌트에서 전달받은 이미지 처리
+  useEffect(() => {
+    if (onImageFromParent) {
+      handleImagePicked(onImageFromParent);
+      onImageProcessed?.(); // 처리 완료 알림
+    }
+  }, [onImageFromParent]);
+
   return (
     <>
       <KeyboardAvoidingView
@@ -311,6 +326,24 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
             />
           </View>
         </View>
+
+        {/* 플로팅 액션 버튼들 */}
+        <ImageRecognitionActions
+          onPressReceipt={handleReceiptScan}
+          onPressCamera={() => {
+            // 카메라 버튼은 ImageRecognitionActions 내부에서 처리
+          }}
+          onImagePicked={handleImagePicked}
+          showBulkSettings={showBulkSettings || false}
+          onToggleBulkSettings={() => {
+            // 일괄설정은 상위 컴포넌트에서 관리하므로 안내 메시지만 표시
+            Toast.show({
+              type: 'info',
+              text1: '일괄모드 설정',
+              text2: '상단의 일괄모드 버튼을 사용해주세요.',
+            });
+          }}
+        />
       </KeyboardAvoidingView>
 
       {/* 영수증 스캔 플로우 */}

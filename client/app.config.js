@@ -113,9 +113,6 @@ export default {
       "expo-notifications"
     ],
     extra: {
-      eas: {
-        projectId: "recipe-ingredient-manager"
-      },
       // 환경 변수를 Expo config에 주입 (직접 검색된 값을 최최우선으로 사용)
       apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || directApiBaseUrl || manualEnvVars.EXPO_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || 'http://localhost:3000/api/v1',
       nodeEnv: process.env.EXPO_PUBLIC_NODE_ENV || manualEnvVars.EXPO_PUBLIC_NODE_ENV || process.env.NODE_ENV || 'development',
