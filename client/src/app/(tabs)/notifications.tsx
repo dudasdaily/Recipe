@@ -139,7 +139,7 @@ export default function NotificationsScreen() {
               onPress={() => handleDaysThresholdChange(daysThreshold - 1)}
               disabled={!enabled || daysThreshold <= 1}
             >
-              <Ionicons name="remove" size={20} color={!enabled || daysThreshold <= 1 ? '#999' : '#007AFF'} />
+              <Ionicons name="remove" size={20} color={!enabled || daysThreshold <= 1 ? '#999' : '#666'} />
             </TouchableOpacity>
             
             <View style={styles.thresholdDisplay}>
@@ -153,7 +153,7 @@ export default function NotificationsScreen() {
               onPress={() => handleDaysThresholdChange(daysThreshold + 1)}
               disabled={!enabled || daysThreshold >= 30}
             >
-              <Ionicons name="add" size={20} color={!enabled || daysThreshold >= 30 ? '#999' : '#007AFF'} />
+              <Ionicons name="add" size={20} color={!enabled || daysThreshold >= 30 ? '#999' : '#666'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -302,8 +302,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
+    borderColor: '#999',
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
