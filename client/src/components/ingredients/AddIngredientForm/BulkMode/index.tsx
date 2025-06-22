@@ -245,7 +245,6 @@ const styles = StyleSheet.create({
   },
   flexArea: {
     flex: 1,
-    paddingTop: 72,
   },
   bulkSettingRow: {
     paddingHorizontal: 16,
