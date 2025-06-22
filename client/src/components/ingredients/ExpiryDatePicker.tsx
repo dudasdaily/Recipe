@@ -25,7 +25,10 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [input, setInput] = useState('');
   const [touched, setTouched] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  // 모달용 임시 상태
+  const [tempDate, setTempDate] = useState(new Date());
+  const [tempHasExpiry, setTempHasExpiry] = useState(true);
 
   // 날짜 문자열을 YYYY-MM-DD 형식으로 변환하는 함수
   const formatDateValue = (dateString: string) => {
@@ -45,14 +48,6 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
   useEffect(() => {
     const formattedValue = formatDateValue(value || '');
     setInput(formattedValue);
-    
-    // 유효한 날짜라면 selectedDate도 업데이트
-    if (isValidDateString(formattedValue)) {
-      setSelectedDate(new Date(formattedValue));
-    } else if (!formattedValue) {
-      // 값이 없으면 내일 날짜로 기본 설정
-      setSelectedDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-    }
   }, [value]);
 
   const handleInputChange = (text: string) => {
@@ -68,117 +63,175 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
     }
   };
 
-  const handleDatePickerChange = (event: any, date?: Date) => {
-    // iOS와 Android 모두에서 모달 닫기
-    setShowDatePicker(false);
-    
-    if (date) {
-      const dateString = formatDate(date);
-      setSelectedDate(date);
-      setInput(dateString);
-      setTouched(false);
-      onChange(dateString);
-    }
-  };
-
   const openDatePicker = () => {
+    console.log('📅 DatePicker 열기');
+    
+    // 현재 값으로 임시 상태 초기화
+    const hasExpiry = !!(value && isValidDateString(formatDateValue(value || '')));
+    setTempHasExpiry(hasExpiry);
+    
+    if (hasExpiry && value) {
+      setTempDate(new Date(formatDateValue(value)));
+    } else {
+      // 내일 날짜로 기본 설정
+      setTempDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    }
+    
     setShowDatePicker(true);
   };
 
-  const closeDatePicker = () => {
+  const handleConfirm = () => {
+    console.log('📅 DatePicker 확인', { tempHasExpiry, tempDate: tempDate.toISOString() });
+    
+    if (tempHasExpiry) {
+      const dateString = formatDate(tempDate);
+      setInput(dateString);
+      setTouched(false);
+      onChange(dateString);
+    } else {
+      // 유통기한 없음 선택
+      setInput('');
+      setTouched(false);
+      onChange('');
+    }
+    
     setShowDatePicker(false);
+  };
+
+  const handleCancel = () => {
+    console.log('📅 DatePicker 취소');
+    setShowDatePicker(false);
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    console.log('📅 DatePicker 날짜 변경:', { 
+      eventType: event?.type, 
+      selectedDate: selectedDate?.toISOString(),
+      platform: Platform.OS 
+    });
+    
+    if (selectedDate) {
+      setTempDate(selectedDate);
+    }
   };
 
   const showError = touched && input && !isValidDateString(input);
 
-  // iOS 스타일 모달 컴포넌트
-  const IOSDatePickerModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={showDatePicker}
-      onRequestClose={closeDatePicker}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDatePickerChange}
-            style={styles.iosDatePicker}
-            minimumDate={new Date()}
-            textColor="#000"
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-
   return (
-    <View style={[styles.row, style]}>
-      <TextInput
-        style={[styles.input, showError && styles.inputError]}
-        placeholder={placeholder}
-        value={input}
-        onChangeText={handleInputChange}
-        onBlur={() => setTouched(true)}
-        keyboardType="numbers-and-punctuation"
-        maxLength={10}
-        autoCorrect={false}
-        autoCapitalize="none"
-      />
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={openDatePicker}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="calendar-outline" size={20} color="#007AFF" />
-      </TouchableOpacity>
+    <View style={[styles.container, style]}>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={[styles.input, showError && styles.inputError]}
+          value={input}
+          onChangeText={handleInputChange}
+          placeholder={placeholder}
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={openDatePicker}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="calendar-outline" size={24} color="#666" />
+        </TouchableOpacity>
+      </View>
       
-      {Platform.OS === 'ios' ? (
-        <IOSDatePickerModal />
-      ) : (
-        showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDatePickerChange}
-            minimumDate={new Date()}
-          />
-        )
+      {showError && (
+        <Text style={styles.errorText}>올바른 날짜 형식이 아닙니다 (YYYY-MM-DD)</Text>
       )}
+
+      {/* 모달 */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showDatePicker}
+        onRequestClose={handleCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* 헤더 */}
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>유통기한 설정</Text>
+              <TouchableOpacity onPress={handleConfirm} style={styles.headerButton}>
+                <Text style={styles.confirmButtonText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* 유통기한 없음 옵션 */}
+            <View style={styles.noExpirySection}>
+              <TouchableOpacity 
+                style={styles.noExpiryOption}
+                onPress={() => setTempHasExpiry(!tempHasExpiry)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.noExpiryContent}>
+                  <Text style={styles.noExpiryText}>유통기한 없음</Text>
+                  <View style={[styles.checkbox, tempHasExpiry ? styles.checkboxUnchecked : styles.checkboxChecked]}>
+                    {!tempHasExpiry && (
+                      <Ionicons name="checkmark" size={16} color="#fff" />
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            {/* 날짜 선택기 */}
+            <View style={[styles.datePickerSection, !tempHasExpiry && styles.datePickerDisabled]}>
+              <Text style={[styles.sectionTitle, !tempHasExpiry && styles.sectionTitleDisabled]}>
+                날짜 선택
+              </Text>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                style={[styles.datePicker, !tempHasExpiry && styles.datePickerInactive]}
+                minimumDate={new Date()}
+                textColor={tempHasExpiry ? "#000" : "#999"}
+                disabled={!tempHasExpiry}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  container: {
+    marginVertical: 8,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
-    backgroundColor: '#F2F4F7',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#222',
-    borderWidth: 1,
-    borderColor: '#eee',
-    marginRight: 8,
+    padding: 12,
+    fontSize: 16,
   },
   inputError: {
-    borderColor: '#ff3b30',
+    borderColor: '#ff4444',
   },
-  iconBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: '#F2F4F7',
+  iconButton: {
+    padding: 12,
   },
-  // iOS 모달 스타일
+  errorText: {
+    color: '#ff4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  
+  // 모달 스타일
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -188,11 +241,92 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Safe area 고려
+    paddingBottom: 34, // Safe area
+    maxHeight: '70%',
   },
-  iosDatePicker: {
-    height: 200,
-    marginTop: 10,
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerButton: {
+    minWidth: 60,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  
+  // 유통기한 없음 섹션
+  noExpirySection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  noExpiryOption: {
+    paddingVertical: 8,
+  },
+  noExpiryContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  noExpiryText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxUnchecked: {
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+  },
+  
+  // 날짜 선택기 섹션
+  datePickerSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  datePickerDisabled: {
+    opacity: 0.5,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 12,
+  },
+  sectionTitleDisabled: {
+    color: '#999',
+  },
+  datePicker: {
+    height: Platform.OS === 'ios' ? 200 : 120,
+  },
+  datePickerInactive: {
+    opacity: 0.3,
   },
 }); 
