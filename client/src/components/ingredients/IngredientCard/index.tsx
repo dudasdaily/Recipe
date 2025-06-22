@@ -27,9 +27,10 @@ export const IngredientCard = ({
   onSelect,
   onLongPress,
   onEdit,
+  onDelete,
   hideImage,
   minimalView,
-}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'hideImage' | 'minimalView'>) => {
+}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'onDelete' | 'hideImage' | 'minimalView'>) => {
   const storageTypeLabel = {
     ROOM_TEMP: '실온',
     REFRIGERATED: '냉장',
@@ -39,6 +40,12 @@ export const IngredientCard = ({
   // 시각적 피드백(pressIn/pressOut + scale + 배경색)
   const [pressed, setPressed] = useState(false);
   const scale = useRef(new Animated.Value(1)).current;
+  
+  // 스와이프 기능을 위한 상태와 애니메이션
+  const translateX = useRef(new Animated.Value(0)).current;
+  const deleteOpacity = useRef(new Animated.Value(0)).current;
+  const [isSwipeDeleteVisible, setIsSwipeDeleteVisible] = useState(false);
+  const SWIPE_THRESHOLD = 80; // 스와이프 임계값
 
   const handlePressIn = () => {
     setPressed(true);
@@ -47,6 +54,102 @@ export const IngredientCard = ({
   const handlePressOut = () => {
     setPressed(false);
     Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  // 스와이프 제스처 핸들러
+  const panResponder = PanResponder.create({
+    onMoveShouldSetPanResponder: (evt, gestureState) => {
+      // 가로 스와이프일 때만 반응하고, 선택 모드가 아닐 때만 작동
+      return !selectionMode && !minimalView && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 15;
+    },
+    onPanResponderGrant: () => {
+      // 간단하게 현재 애니메이션 값으로 시작
+      translateX.stopAnimation();
+      deleteOpacity.stopAnimation();
+    },
+    onPanResponderMove: (evt, gestureState) => {
+      // 오른쪽에서 왼쪽 스와이프만 허용 (음수 방향), 최대 -100까지만
+      const newValue = Math.max(-100, Math.min(0, gestureState.dx));
+      translateX.setValue(newValue);
+      
+      // 스와이프 거리에 따라 삭제 버튼 투명도 조절 (0 ~ 1)
+      const swipeDistance = Math.abs(newValue);
+      const opacity = Math.min(1, swipeDistance / SWIPE_THRESHOLD);
+      deleteOpacity.setValue(opacity);
+    },
+    onPanResponderRelease: (evt, gestureState) => {
+      if (gestureState.dx < -SWIPE_THRESHOLD) {
+        // 임계값을 넘으면 삭제 버튼 고정 표시
+        setIsSwipeDeleteVisible(true);
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: -80,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(deleteOpacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          })
+        ]).start();
+      } else {
+        // 임계값을 넘지 않으면 원래 위치로 복원
+        setIsSwipeDeleteVisible(false);
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(deleteOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          })
+        ]).start();
+      }
+    },
+  });
+
+  // 스와이프 삭제 핸들러
+  const handleSwipeDelete = () => {
+    if (onDelete) {
+      onDelete(ingredient.id);
+    }
+    // 삭제 후 원래 위치로 복원
+    setIsSwipeDeleteVisible(false);
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(deleteOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+
+  // 스와이프 취소 (다른 곳 터치 시)
+  const resetSwipe = () => {
+    if (isSwipeDeleteVisible) {
+      setIsSwipeDeleteVisible(false);
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(deleteOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
   };
 
   const isSelected = !!selected;
@@ -114,87 +217,141 @@ export const IngredientCard = ({
   }
 
   return (
-    <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
-      {/* 사진: 맨 왼쪽 */}
-      {!hideImage && (
-        <Image
-          source={imageUrl}
-          style={{ width: 64, height: 64, borderRadius: 32, marginRight: 15, backgroundColor: '#eee' }}
-          resizeMode="cover"
-        />
-      )}
-      {/* 텍스트 정보 (이름, 수량, 유통기한만) */}
-      <View style={{ flex: 1 }}>
-        <TouchableOpacity
-          style={{ width: '100%' }}
-          activeOpacity={0.95}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : undefined}
-          onLongPress={onLongPress}
-        >
-          <Title compact={compact} style={{ fontSize: compact ? 16 : 16 }}>{ingredient.name}</Title>
-          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>수량: {ingredient.quantity}</InfoText>
-          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>{expiryLabel}</InfoText>
-        </TouchableOpacity>
-      </View>
-      {/* 선택/편집 버튼 등은 기존대로 오른쪽에 유지, D-day는 연필 아이콘 왼쪽에 별도 표시 */}
-      {selectionMode && (
-        <View style={{
-          width: 28,
-          height: 28,
-          alignItems: 'center',
+    <View style={{ 
+      position: 'relative', 
+      marginHorizontal: compact ? 4 : 8,
+      marginVertical: compact ? 4 : 8,
+    }}>
+      {/* 스와이프 삭제 버튼 (뒤쪽에 고정) */}
+      {!selectionMode && !minimalView && (
+        <Animated.View style={{
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 80,
+          backgroundColor: '#ff3b30',
           justifyContent: 'center',
+          alignItems: 'center',
           borderRadius: 8,
-          backgroundColor: isSelected ? '#007AFF' : '#fff',
-          borderWidth: isSelected ? 0 : 1.5,
-          borderColor: isSelected ? 'transparent' : '#bbb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.10,
-          shadowRadius: 2,
-          elevation: 2,
-          marginLeft: 8,
+          zIndex: 1,
+          opacity: deleteOpacity,
         }}>
           <TouchableOpacity
-            onPress={() => onSelect && onSelect(ingredient.id)}
-            hitSlop={8}
-            activeOpacity={0.7}
-            style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
-          >
-            {isSelected && (
-              <Ionicons
-                name="checkmark"
-                size={20}
-                color={'#fff'}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-      {!selectionMode && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
-          {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
-          <Text style={{ marginRight: 10, color: 'black', fontWeight: 'light', fontSize: 23}}>
-            {getDDay(ingredient.expiry_date)}
-          </Text>
-          <TouchableOpacity
-            onPress={() => onEdit && onEdit(ingredient)}
+            onPress={handleSwipeDelete}
             style={{
-              width: 32,
-              height: 32,
-              alignItems: 'center',
+              width: '100%',
+              height: '100%',
               justifyContent: 'center',
+              alignItems: 'center',
               borderRadius: 8,
-              backgroundColor: '#f8f9fa',
             }}
             activeOpacity={0.7}
+            disabled={!isSwipeDeleteVisible} // 완전히 나타났을 때만 터치 가능
           >
-            <Ionicons name="pencil" size={16} color="#000" />
+            <Ionicons name="trash" size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600', marginTop: 2 }}>
+              삭제
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+      
+      {/* 메인 카드 컨테이너 */}
+      <Animated.View 
+        style={[
+          {
+            ...containerStyle,
+            margin: 0, // 외부에서 마진 처리
+          },
+          { 
+            transform: [{ scale }, { translateX }],
+            zIndex: 2,
+          }
+        ]}
+        {...(!selectionMode && !minimalView ? panResponder.panHandlers : {})}
+      > 
+        {/* 사진: 맨 왼쪽 */}
+        {!hideImage && (
+          <Image
+            source={imageUrl}
+            style={{ width: 64, height: 64, borderRadius: 32, marginRight: 15, backgroundColor: '#eee' }}
+            resizeMode="cover"
+          />
+        )}
+        {/* 텍스트 정보 (이름, 수량, 유통기한만) */}
+        <View style={{ flex: 1 }}>
+          <TouchableOpacity
+            style={{ width: '100%' }}
+            activeOpacity={0.95}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : resetSwipe}
+            onLongPress={onLongPress}
+          >
+            <Title compact={compact} style={{ fontSize: compact ? 16 : 16 }}>{ingredient.name}</Title>
+            <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>수량: {ingredient.quantity}</InfoText>
+            <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>{expiryLabel}</InfoText>
           </TouchableOpacity>
         </View>
-      )}
-    </Animated.View>
+        {/* 선택/편집 버튼 등은 기존대로 오른쪽에 유지, D-day는 연필 아이콘 왼쪽에 별도 표시 */}
+        {selectionMode && (
+          <View style={{
+            width: 28,
+            height: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+            backgroundColor: isSelected ? '#007AFF' : '#fff',
+            borderWidth: isSelected ? 0 : 1.5,
+            borderColor: isSelected ? 'transparent' : '#bbb',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.10,
+            shadowRadius: 2,
+            elevation: 2,
+            marginLeft: 8,
+          }}>
+            <TouchableOpacity
+              onPress={() => onSelect && onSelect(ingredient.id)}
+              hitSlop={8}
+              activeOpacity={0.7}
+              style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+            >
+              {isSelected && (
+                <Ionicons
+                  name="checkmark"
+                  size={20}
+                  color={'#fff'}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+        {!selectionMode && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+            {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
+            <Text style={{ marginRight: 10, color: 'black', fontWeight: 'light', fontSize: 23}}>
+              {getDDay(ingredient.expiry_date)}
+            </Text>
+            <TouchableOpacity
+              onPress={() => onEdit && onEdit(ingredient)}
+              style={{
+                width: 32,
+                height: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                backgroundColor: '#f8f9fa',
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="pencil" size={16} color="#000" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
+    </View>
   );
 };
 

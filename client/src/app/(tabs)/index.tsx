@@ -312,6 +312,7 @@ export default function HomeScreen() {
                 onSelect={() => handleSelect(item.id)}
                 onLongPress={() => handleLongPress(item.id)}
                 onEdit={handleEdit}
+                onDelete={(id) => deleteMutate(id)}
               />
             )}
             keyExtractor={item => String(item.id)}
