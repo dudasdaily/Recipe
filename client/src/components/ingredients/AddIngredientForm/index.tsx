@@ -3,21 +3,27 @@ import { BulkModeForm } from './BulkMode';
 
 type AddIngredientFormProps = {
   showBulkSettings?: boolean;
-  onImageFromParent?: string | null;
-  onImageProcessed?: () => void;
+  extractedIngredients?: string[];
+  onIngredientsUsed?: () => void;
+  cameraIngredients?: string[];
+  onCameraIngredientsUsed?: () => void;
 };
 
 export default function AddIngredientForm({ 
-  showBulkSettings, 
-  onImageFromParent,
-  onImageProcessed 
+  showBulkSettings,
+  extractedIngredients,
+  onIngredientsUsed,
+  cameraIngredients,
+  onCameraIngredientsUsed
 }: AddIngredientFormProps) {
   return (
     <View style={{ flex: 1 }}>
       <BulkModeForm 
         showBulkSettings={showBulkSettings}
-        onImageFromParent={onImageFromParent}
-        onImageProcessed={onImageProcessed}
+        extractedIngredients={extractedIngredients}
+        onIngredientsUsed={onIngredientsUsed}
+        cameraIngredients={cameraIngredients}
+        onCameraIngredientsUsed={onCameraIngredientsUsed}
       />
     </View>
   );
