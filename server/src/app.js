@@ -53,8 +53,8 @@ async function startServer() {
     const syncOptions = {
       // 개발 환경에서만 force: true 사용
       force: process.env.NODE_ENV === 'development' && process.env.DB_FORCE_SYNC === 'true',
-      // 테이블이 없을 때만 생성
-      alter: true
+      // alter 옵션을 비활성화하여 인덱스 중복 생성 방지
+      alter: false
     };
     
     console.log('Database sync options:', syncOptions);
