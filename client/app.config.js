@@ -126,6 +126,9 @@ export default {
       pushNotificationEnabled: (process.env.EXPO_PUBLIC_PUSH_NOTIFICATION_ENABLED || manualEnvVars.EXPO_PUBLIC_PUSH_NOTIFICATION_ENABLED || process.env.PUSH_NOTIFICATION_ENABLED) === 'true',
       appName: process.env.EXPO_PUBLIC_APP_NAME || manualEnvVars.EXPO_PUBLIC_APP_NAME || process.env.APP_NAME || 'Kooky',
       appVersion: process.env.EXPO_PUBLIC_APP_VERSION || manualEnvVars.EXPO_PUBLIC_APP_VERSION || process.env.APP_VERSION || '1.0.0',
+    },
+    notification: {
+      icon: "./assets/images/notification-icon.png"
     }
   }
 }; 

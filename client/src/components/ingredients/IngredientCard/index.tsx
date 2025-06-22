@@ -477,9 +477,19 @@ export const IngredientCard = ({
       {!selectionMode && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
           {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
-          <Text style={{ marginRight: 10, color: 'black', fontWeight: 'light', fontSize: 23}}>
-            {getDDay(ingredient.expiry_date)}
-          </Text>
+          {(() => {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expiry = new Date(ingredient.expiry_date);
+            expiry.setHours(0,0,0,0);
+            const diff = isNaN(expiry.getTime()) ? 0 : Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            const ddayText = getDDay(ingredient.expiry_date);
+            return (
+              <Text style={{ marginRight: 10, color: diff < 0 ? '#ff3b30' : 'black', fontWeight: 'light', fontSize: 23 }}>
+                {ddayText}
+              </Text>
+            );
+          })()}
           <TouchableOpacity
             onPress={() => onEdit && onEdit(ingredient)}
             style={{

@@ -15,6 +15,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { analyzeIngredientImage } from '@/services/api/vision';
 import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
 import { useReceiptStore } from '@/stores/receipt';
+import { Animated as RNAnimated } from 'react-native';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
@@ -32,12 +33,13 @@ const initialItem: BulkFormData = {
 };
 
 export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
-  const [items, setItems] = useState<BulkFormData[]>([initialItem]);
+  const [items, setItems] = useState<(BulkFormData & { _key?: string })[]>([{ ...initialItem, _key: String(Date.now()) }]);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
   const [showReceiptFlow, setShowReceiptFlow] = useState(false);
   const queryClient = useQueryClient();
   const slideAnim = useRef(new Animated.Value(-100)).current;
+  const cardAnimRefs = useRef<{ [key: string]: RNAnimated.Value }>({});
 
   // 영수증 스토어에서 편집된 아이템들 가져오기
   const { editableItems, resetState } = useReceiptStore();
@@ -74,7 +76,7 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
         text1: '재료 추가 완료',
         text2: '재료가 성공적으로 추가되었습니다.',
       });
-      setItems([initialItem]);
+      setItems([{ ...initialItem, _key: String(Date.now()) }]);
     },
     onError: (error: Error) => {
       Toast.show({
@@ -86,11 +88,17 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
   });
 
   const handleAddItem = () => {
-    setItems((prev) => [...prev, { ...initialItem }]);
+    const newKey = String(Date.now() + Math.random());
+    setItems((prev) => [...prev, { ...initialItem, _key: newKey }]);
+    cardAnimRefs.current[newKey] = new RNAnimated.Value(0);
   };
 
   const handleRemoveItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    setItems((prev) => {
+      const removed = prev[index]?._key;
+      if (removed) delete cardAnimRefs.current[removed];
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleUpdateItem = (index: number, data: Partial<BulkFormData>) => {
@@ -174,6 +182,20 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
     resetState();
   };
 
+  // 새 카드 추가 시 애니메이션 실행
+  useEffect(() => {
+    if (items.length > 0) {
+      const last = items[items.length - 1];
+      if (last._key && cardAnimRefs.current[last._key]) {
+        RNAnimated.timing(cardAnimRefs.current[last._key], {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+  }, [items.length]);
+
   return (
     <>
       <KeyboardAvoidingView
@@ -220,25 +242,39 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
               }]
             }}
           >
-            <DraggableFlatList<BulkFormData>
+            <DraggableFlatList<BulkFormData & { _key?: string }>
               data={items}
-              renderItem={({ item, drag, isActive, index }: any) => (
-                <BulkIngredientItem
-                  item={item}
-                  index={typeof index === 'number' ? index : items.findIndex(i => i === item)}
-                  onUpdate={(data) => {
-                    const idx = items.findIndex((i) => i === item);
-                    handleUpdateItem(idx, data);
-                  }}
-                  onRemove={() => {
-                    const idx = items.findIndex((i) => i === item);
-                    handleRemoveItem(idx);
-                  }}
-                  onDrag={drag}
-                />
-              )}
-              keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
-              onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
+              renderItem={({ item, drag, isActive, index }: any) => {
+                const key = item._key || String(index);
+                if (!cardAnimRefs.current[key]) cardAnimRefs.current[key] = new RNAnimated.Value(1);
+                const anim = cardAnimRefs.current[key];
+                return (
+                  <RNAnimated.View
+                    style={{
+                      opacity: anim,
+                      transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }],
+                      marginBottom: 12,
+                    }}
+                  >
+                    <BulkIngredientItem
+                      item={item}
+                      index={typeof index === 'number' ? index : items.findIndex(i => i === item)}
+                      onUpdate={(data) => {
+                        const idx = items.findIndex((i) => i === item);
+                        // _key 유지
+                        setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...data, _key: it._key } : it));
+                      }}
+                      onRemove={() => {
+                        const idx = items.findIndex((i) => i === item);
+                        handleRemoveItem(idx);
+                      }}
+                      onDrag={drag}
+                    />
+                  </RNAnimated.View>
+                );
+              }}
+              keyExtractor={(item, index) => item._key || index.toString()}
+              onDragEnd={({ data }: { data: (BulkFormData & { _key?: string })[] }) => setItems(data)}
               contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 100 }]}
               style={{ minHeight: 200, maxHeight: '100%' }}
               ListEmptyComponent={
@@ -247,14 +283,16 @@ export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
                 </View>
               }
               ListFooterComponent={
-                <View style={styles.addButtonContainer}>
-                  <TouchableOpacity
-                    style={styles.addItemButton}
-                    onPress={handleAddItem}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.addItemButtonText}>+</Text>
-                  </TouchableOpacity>
+                <View style={{ marginTop: 0 }}>
+                  <View style={styles.addButtonContainer}>
+                    <TouchableOpacity
+                      style={styles.addItemButton}
+                      onPress={handleAddItem}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.addItemButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               }
             />
@@ -319,7 +357,7 @@ const styles = StyleSheet.create({
   },
   addButtonContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 0,
     paddingHorizontal: 16,
   },
   addItemButton: {

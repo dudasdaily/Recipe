@@ -31,7 +31,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 2,
     minHeight: 32,
-    paddingLeft: 10,
+    paddingLeft: 25,
+    paddingRight : 25,
   },
   scrollContent: {
     paddingHorizontal: 8,
