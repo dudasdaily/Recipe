@@ -8,7 +8,9 @@ const FOOD_RELATED_KEYWORDS = new Set([
   'Cheese', 'Beef', 'Pork', 'Chicken', 'Fish', 'Egg',
   'Mushroom', 'Pepper', 'Lettuce', 'Cabbage', 'Apple', 'Orange',
   'Rice', 'Noodle', 'Bread', 'Bean', 'Corn', 'Spinach',
-  'Pumpkin', 'Zucchini', 'Broccoli', 'Cauliflower', 'Celery', 'Radish', 'Turnip', 'Sweet potato', 'Yam', 'Leek', 'Asparagus', 'Artichoke', 'Okra', 'Eggplant', 'Pea', 'Green bean', 'Chili', 'Bell pepper', 'Scallion', 'Shallot', 'Ginger', 'Bok choy', 'Kale', 'Arugula', 'Endive', 'Fennel', 'Parsnip', 'Rutabaga', 'Watercress',
+  // 추가: 누락되기 쉬운 식재료들
+  'Leek', 'Green onion', 'Scallion', 'Spring onion', 'Welsh onion',
+  'Pumpkin', 'Zucchini', /* 'Broccoli', */ 'Cauliflower', 'Celery', 'Radish', 'Turnip', 'Sweet potato', 'Yam', 'Leek', 'Asparagus', 'Artichoke', 'Okra', 'Eggplant', 'Pea', 'Green bean', 'Chili', 'Bell pepper', 'Scallion', 'Shallot', 'Ginger', 'Bok choy', 'Kale', 'Arugula', 'Endive', 'Fennel', 'Parsnip', 'Rutabaga', 'Watercress',
   'Banana', 'Strawberry', 'Blueberry', 'Raspberry', 'Grape', 'Pear', 'Peach', 'Plum', 'Cherry', 'Pineapple', 'Mango', 'Melon', 'Watermelon', 'Lemon', 'Lime', 'Grapefruit', 'Kiwi', 'Papaya', 'Fig', 'Date', 'Pomegranate', 'Coconut', 'Avocado',
   'Shrimp', 'Crab', 'Lobster', 'Oyster', 'Clam', 'Mussel', 'Scallop', 'Squid', 'Octopus', 'Salmon', 'Tuna', 'Mackerel', 'Anchovy', 'Sardine', 'Cod', 'Haddock', 'Halibut', 'Trout', 'Eel',
   'Oat', 'Barley', 'Wheat', 'Rye', 'Millet', 'Quinoa', 'Buckwheat', 'Sorghum', 'Chestnut', 'Walnut', 'Almond', 'Peanut', 'Hazelnut', 'Pistachio', 'Cashew', 'Pecan', 'Macadamia', 'Sunflower seed', 'Pumpkin seed', 'Sesame', 'Chia', 'Flaxseed',
@@ -18,13 +20,14 @@ const FOOD_RELATED_KEYWORDS = new Set([
 // 제외할 일반적인 카테고리 키워드
 const EXCLUDE_KEYWORDS = new Set([
   'Food', 'Ingredient', 'Produce', 'Vegetable', 'Fruit', 'Meat',
-  'Seafood', 'Dish', 'Cuisine', 'Recipe', 'Meal', 'Snack'
+  'Seafood', 'Dish', 'Cuisine', 'Recipe', 'Meal', 'Snack',
+  'Broccoli' // 브로콜리 제외
 ]);
 
 // 영어 -> 한국어 변환 매핑
 const TRANSLATION_MAP = {
   // 채소류
-  'Garlic': '마늘',
+  'Garlic': '가지', // 임시: 마늘 → 가지로 매핑
   'Onion': '양파',
   'Potato': '감자',
   'Tomato': '토마토',
@@ -61,7 +64,7 @@ const TRANSLATION_MAP = {
   // 추가: 채소
   'Pumpkin': '호박',
   'Zucchini': '주키니',
-  'Broccoli': '브로콜리',
+  // 'Broccoli': '브로콜리', // 임시 제거
   'Cauliflower': '콜리플라워',
   'Celery': '샐러리',
   'Radish': '무',
@@ -69,6 +72,10 @@ const TRANSLATION_MAP = {
   'Sweet potato': '고구마',
   'Yam': '얌',
   'Leek': '대파',
+  'Green onion': '대파',
+  'Scallion': '대파', 
+  'Spring onion': '대파',
+  'Welsh onion': '대파',
   'Asparagus': '아스파라거스',
   'Artichoke': '아티초크',
   'Okra': '오크라',
@@ -197,8 +204,9 @@ exports.analyzeImage = async (imageBuffer) => {
     const [result] = await client.annotateImage({
       image: { content: imageBuffer },
       features: [
-        { type: 'LABEL_DETECTION', maxResults: 20 },
-        { type: 'OBJECT_LOCALIZATION', maxResults: 20 }
+        { type: 'LABEL_DETECTION', maxResults: 50 },
+        { type: 'OBJECT_LOCALIZATION', maxResults: 30 },
+        { type: 'CROP_HINTS', maxResults: 10 }
       ],
     });
 
@@ -251,8 +259,16 @@ exports.analyzeImage = async (imageBuffer) => {
       })
       .sort((a, b) => b.confidence - a.confidence);
 
-    // 신뢰도가 50% 이상인 항목만 필터링
-    const filteredIngredients = uniqueIngredients.filter(item => item.confidence > 0.5);
+    // 모든 감지된 식재료와 신뢰도 로그 출력
+    console.log('[Vision] 감지된 모든 식재료 (신뢰도순):', 
+      uniqueIngredients.map(item => `${item.name}(${(item.confidence*100).toFixed(1)}%)`).join(', '));
+
+    // 신뢰도가 70% 이상인 항목만 필터링
+    const filteredIngredients = uniqueIngredients.filter(item => item.confidence > 0.70);
+    
+    // 필터링 결과도 별도 로그 출력
+    console.log('[Vision] 70% 이상 신뢰도 식재료:', 
+      filteredIngredients.map(item => `${item.name}(${(item.confidence*100).toFixed(1)}%)`).join(', '));
 
     // 식재료가 없는 경우와 있는 경우 응답 분리
     if (filteredIngredients.length === 0) {
