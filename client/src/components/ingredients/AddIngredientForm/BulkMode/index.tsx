@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
@@ -25,15 +25,12 @@ const initialItem: BulkFormData = {
   expiry_date: '',
 };
 
-export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] }) {
-  const [items, setItems] = useState<BulkFormData[]>(
-    initialNames.length > 0
-      ? initialNames.map(name => ({ ...initialItem, name }))
-      : [initialItem]
-  );
+export function BulkModeForm() {
+  const [items, setItems] = useState<BulkFormData[]>([initialItem]);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
   const [showReceiptFlow, setShowReceiptFlow] = useState(false);
+  const [showBulkSettings, setShowBulkSettings] = useState(false);
   const queryClient = useQueryClient();
 
   // 영수증 스토어에서 편집된 아이템들 가져오기
@@ -158,21 +155,27 @@ export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] })
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <ImageRecognitionActions
+          onPressReceipt={handleReceiptScan}
+          onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+          onImagePicked={handleImagePicked}
+          showBulkSettings={showBulkSettings}
+          onToggleBulkSettings={() => setShowBulkSettings(!showBulkSettings)}
+        />
         <View style={[styles.flexArea, { minHeight: 200 }]}>
-          <ImageRecognitionActions
-            mode="MULTI"
-            onPressReceipt={handleReceiptScan}
-            onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
-            onImagePicked={handleImagePicked}
-          />
-          <View style={styles.bulkSettingRow}>
-            <Text style={styles.bulkLabel}>일괄 카테고리</Text>
-            <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
-          </View>
-          <View style={styles.bulkSettingRow}>
-            <Text style={styles.bulkLabel}>일괄 보관방법</Text>
-            <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
-          </View>
+          {showBulkSettings && (
+            <>
+              <View style={styles.bulkSettingRow}>
+                <Text style={styles.bulkLabel}>일괄 카테고리</Text>
+                <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
+              </View>
+              <View style={styles.bulkSettingRow}>
+                <Text style={styles.bulkLabel}>일괄 보관방법</Text>
+                <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
+              </View>
+            </>
+          )}
+          
           <DraggableFlatList<BulkFormData>
             data={items}
             renderItem={({ item, drag, isActive }: RenderItemParams<BulkFormData>) => (
@@ -191,31 +194,38 @@ export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] })
             )}
             keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
             onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
-            contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 230 }]}
+            contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 100 }]}
             style={{ minHeight: 200, maxHeight: '100%' }}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>추가할 재료가 없습니다. "항목 추가" 버튼을 눌러주세요.</Text>
+                <Text style={styles.emptyText}>추가할 재료가 없습니다. "+" 버튼을 눌러주세요.</Text>
+              </View>
+            }
+            ListFooterComponent={
+              <View style={styles.addButtonContainer}>
+                <TouchableOpacity
+                  style={styles.addItemButton}
+                  onPress={handleAddItem}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.addItemButtonText}>+</Text>
+                </TouchableOpacity>
               </View>
             }
           />
         </View>
-        <SafeAreaView style={styles.footerArea}>
+        
+        <View style={styles.footerArea}>
           <View style={styles.footer}>
-            <Button
-              title="항목 추가"
-              onPress={handleAddItem}
-              variant="secondary"
-              style={styles.addButton}
-            />
             <Button
               title="모두 추가"
               onPress={handleSubmit}
               disabled={isPending}
               loading={isPending}
+              style={styles.submitButtonFixed}
             />
           </View>
-        </SafeAreaView>
+        </View>
       </KeyboardAvoidingView>
 
       {/* 영수증 스캔 플로우 */}
@@ -254,16 +264,45 @@ const styles = StyleSheet.create({
   },
   footerArea: {
     backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E7',
   },
   footer: {
-    padding: 16,
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
   },
-  addButton: {
-    marginBottom: 8,
+  addButtonContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  addItemButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#007AFF',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addItemButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '300',
+    lineHeight: 24,
+  },
+  submitButtonFixed: {
+    height: 40,
+    paddingHorizontal: 24,
+    borderRadius: 20,
   },
   emptyContainer: {
     flex: 1,
