@@ -46,9 +46,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 12,
+    paddingLeft: 30,
   },
   cardContainer: {
-    width: 120,
-    marginHorizontal: 4,
+    width: 70,
+    marginHorizontal: 2,
   },
 }); 

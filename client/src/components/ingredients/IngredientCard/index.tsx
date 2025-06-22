@@ -71,11 +71,11 @@ export const IngredientCard = ({
         borderRadius: 8,
         padding: compact ? 8 : 16,
         margin: compact ? 4 : 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
+        shadowColor: 'transparent',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        elevation: 0,
         flexDirection: 'row' as const,
         alignItems: 'center' as const,
       };
@@ -89,19 +89,13 @@ export const IngredientCard = ({
   // 이미지 URL이 있으면 사용, 없으면 placeholder
   const imageUrl = ingredient.imageUrl
     ? { uri: ingredient.imageUrl }
-    : require('../../../../assets/images/icon.png');
+    : require('../../../../assets/images/paprika.png');
 
   if (minimalView) {
     return (
       <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
-        {/* 사진: 맨 왼쪽 */}
-        <Image
-          source={imageUrl}
-          style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#eee' }}
-          resizeMode="cover"
-        />
-        {/* 이름만 표시 (D-day 등 기타 정보는 표시하지 않음) */}
-        <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#333' }}>{ingredient.name}</Text>
+        {/* 이름만 표시 (사진, D-day 등 기타 정보는 표시하지 않음) */}
+        <Text style={{ fontWeight: 'bold', fontSize: 13, color: '#333' }}>{ingredient.name}</Text>
       </Animated.View>
     );
   }
@@ -112,7 +106,7 @@ export const IngredientCard = ({
       {!hideImage && (
         <Image
           source={imageUrl}
-          style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#eee' }}
+          style={{ width: 64, height: 64, borderRadius: 32, marginRight: 12, backgroundColor: '#eee' }}
           resizeMode="cover"
         />
       )}
