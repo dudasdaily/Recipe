@@ -207,7 +207,7 @@ export default function HomeScreen() {
               />
             </View>
           </View>
-          <Text style={{ marginTop: 2, marginLeft: 25, fontSize: 14, color: '#666', textAlign: 'left' }}>등록한 재료 {filteredIngredients.length}개</Text>
+          <Text style={{ marginTop: 2, marginLeft: 25, fontSize: 14, color: '#666', textAlign: 'left' }}>등록 {filteredIngredients.length}개</Text>
         </View>
         {/* 선택 모드 UI */}
         {isSelectionMode && (

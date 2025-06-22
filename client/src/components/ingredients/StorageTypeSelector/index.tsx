@@ -47,8 +47,10 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    height: 44,
-    borderRadius: 8,
+    height: 30,
+    minWidth: 44,
+    borderRadius: 25,
+    paddingHorizontal: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -56,8 +58,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   selectedButton: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#222',
+    borderColor: '#222',
   },
   text: {
     fontSize: 14,
@@ -65,6 +67,6 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 }); 

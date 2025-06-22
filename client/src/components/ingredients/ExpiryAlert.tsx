@@ -12,7 +12,7 @@ export function ExpiryAlert({ ingredients }: ExpiryAlertProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.subtitle}>유통기한 임박재료{ingredients.length}개</Text>
+        <Text style={styles.subtitle}>임박 {ingredients.length}개</Text>
       </View>
       <ScrollView
         horizontal
