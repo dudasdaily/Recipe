@@ -12,7 +12,7 @@ export function ExpiryAlert({ ingredients }: ExpiryAlertProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.subtitle}>{ingredients.length}개의 재료</Text>
+        <Text style={styles.subtitle}>유통기한 임박재료{ingredients.length}개</Text>
       </View>
       <ScrollView
         horizontal
@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#666',
+    marginLeft: 10,
   },
   scrollContent: {
     paddingHorizontal: 12,
