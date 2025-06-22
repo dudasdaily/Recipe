@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
@@ -30,6 +30,7 @@ export function BulkModeForm() {
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
   const [showReceiptFlow, setShowReceiptFlow] = useState(false);
+  const [showBulkSettings, setShowBulkSettings] = useState(false);
   const queryClient = useQueryClient();
 
   // 영수증 스토어에서 편집된 아이템들 가져오기
@@ -154,20 +155,38 @@ export function BulkModeForm() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <ImageRecognitionActions
+          onPressReceipt={handleReceiptScan}
+          onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
+          onImagePicked={handleImagePicked}
+        />
         <View style={[styles.flexArea, { minHeight: 200 }]}>
-          <ImageRecognitionActions
-            onPressReceipt={handleReceiptScan}
-            onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
-            onImagePicked={handleImagePicked}
-          />
-          <View style={styles.bulkSettingRow}>
-            <Text style={styles.bulkLabel}>일괄 카테고리</Text>
-            <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
+          <View style={styles.bulkToggleContainer}>
+            <TouchableOpacity
+              style={styles.bulkToggleButton}
+              onPress={() => setShowBulkSettings(!showBulkSettings)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.bulkToggleText}>일괄 설정</Text>
+              <Text style={[styles.bulkToggleIcon, showBulkSettings && styles.bulkToggleIconRotated]}>
+                ▼
+              </Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.bulkSettingRow}>
-            <Text style={styles.bulkLabel}>일괄 보관방법</Text>
-            <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
-          </View>
+          
+          {showBulkSettings && (
+            <>
+              <View style={styles.bulkSettingRow}>
+                <Text style={styles.bulkLabel}>일괄 카테고리</Text>
+                <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
+              </View>
+              <View style={styles.bulkSettingRow}>
+                <Text style={styles.bulkLabel}>일괄 보관방법</Text>
+                <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
+              </View>
+            </>
+          )}
+          
           <DraggableFlatList<BulkFormData>
             data={items}
             renderItem={({ item, drag, isActive }: RenderItemParams<BulkFormData>) => (
@@ -186,11 +205,22 @@ export function BulkModeForm() {
             )}
             keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
             onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
-            contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 230 }]}
+            contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 100 }]}
             style={{ minHeight: 200, maxHeight: '100%' }}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>추가할 재료가 없습니다. "항목 추가" 버튼을 눌러주세요.</Text>
+                <Text style={styles.emptyText}>추가할 재료가 없습니다. "+" 버튼을 눌러주세요.</Text>
+              </View>
+            }
+            ListFooterComponent={
+              <View style={styles.addButtonContainer}>
+                <TouchableOpacity
+                  style={styles.addItemButton}
+                  onPress={handleAddItem}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.addItemButtonText}>+</Text>
+                </TouchableOpacity>
               </View>
             }
           />
@@ -198,16 +228,11 @@ export function BulkModeForm() {
         <SafeAreaView style={styles.footerArea}>
           <View style={styles.footer}>
             <Button
-              title="항목 추가"
-              onPress={handleAddItem}
-              variant="secondary"
-              style={styles.addButton}
-            />
-            <Button
               title="모두 추가"
               onPress={handleSubmit}
               disabled={isPending}
               loading={isPending}
+              style={styles.submitButton}
             />
           </View>
         </SafeAreaView>
@@ -230,6 +255,36 @@ const styles = StyleSheet.create({
   },
   flexArea: {
     flex: 1,
+    paddingTop: 72,
+  },
+  bulkToggleContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  bulkToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  bulkToggleText: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '600',
+  },
+  bulkToggleIcon: {
+    fontSize: 14,
+    color: '#6C757D',
+    transform: [{ rotate: '0deg' }],
+  },
+  bulkToggleIconRotated: {
+    transform: [{ rotate: '180deg' }],
   },
   bulkSettingRow: {
     paddingHorizontal: 16,
@@ -249,16 +304,42 @@ const styles = StyleSheet.create({
   },
   footerArea: {
     backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E7',
   },
   footer: {
     padding: 16,
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
+    paddingBottom: 8,
   },
-  addButton: {
-    marginBottom: 8,
+  addButtonContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  addItemButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#007AFF',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addItemButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '300',
+    lineHeight: 24,
+  },
+  submitButton: {
+    // 기본 버튼 스타일 사용
   },
   emptyContainer: {
     flex: 1,

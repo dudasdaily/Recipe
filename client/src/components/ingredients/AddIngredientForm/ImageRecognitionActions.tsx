@@ -1,5 +1,4 @@
-import { View, StyleSheet, Text, Alert } from 'react-native';
-import { Button } from '@/components/common/Button';
+import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
@@ -64,17 +63,16 @@ export function ImageRecognitionActions({ onPressReceipt, onPressCamera, onImage
 
   return (
     <View style={styles.container}>
-      <Button
-        title="영수증 촬영"
+      <TouchableOpacity
+        style={styles.iconButton}
         onPress={onPressReceipt}
-        variant="secondary"
-        style={styles.button}
+        activeOpacity={0.7}
       >
-        <Ionicons name="receipt-outline" size={20} color="#007AFF" style={{ marginRight: 6 }} />
-        <Text>영수증 촬영</Text>
-      </Button>
-      <Button
-        title="재료 사진 촬영"
+        <Ionicons name="receipt-outline" size={24} color="#007AFF" />
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={styles.iconButton}
         onPress={() => {
           Alert.alert(
             '사진 선택',
@@ -86,27 +84,39 @@ export function ImageRecognitionActions({ onPressReceipt, onPressCamera, onImage
             ]
           );
         }}
-        variant="secondary"
-        style={styles.button}
+        activeOpacity={0.7}
       >
-        <Ionicons name="camera-outline" size={20} color="#007AFF" style={{ marginRight: 6 }} />
-        <Text>재료 사진 촬영</Text>
-      </Button>
+        <Ionicons name="camera-outline" size={24} color="#007AFF" />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
-    marginTop: 4,
-    paddingHorizontal: 8,
+    zIndex: 10,
   },
-  button: {
-    flex: 1,
-    minWidth: 120,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
   },
 }); 
