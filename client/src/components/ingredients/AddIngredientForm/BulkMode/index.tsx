@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   addItemButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#222',
+    backgroundColor: '#bdbdbd',
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',

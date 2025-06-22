@@ -27,6 +27,20 @@ const CATEGORIES = [
   { label: '기타', value: '기타' },
 ];
 
+const STORAGE_TYPE_COLORS = {
+  'ROOM_TEMP': '#ff9d5b',
+  'REFRIGERATED': '#4CAF50',
+  'FROZEN': '#2196F3',
+};
+const CATEGORY_COLORS = {
+  '채소': '#4CAF50',
+  '과일': '#FFC107',
+  '육류': '#F44336',
+  '수산물': '#2196F3',
+  '유제품': '#E1BEE7',
+  '기타': '#9E9E9E',
+};
+
 const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 
 export default function HomeScreen() {
@@ -313,16 +327,20 @@ export default function HomeScreen() {
                     key={item.value}
                     style={[
                       styles.dropdownItem,
-                      selectedStorage === item.value && styles.dropdownItemSelected,
+                      selectedStorage === item.value && {
+                        backgroundColor: item.value === '' ? '#e0e0e0' : (STORAGE_TYPE_COLORS[item.value as keyof typeof STORAGE_TYPE_COLORS] || '#fff'),
+                      },
                     ]}
                     onPress={() => {
                       setSelectedStorage(item.value);
-                      toggleStorageDropdown();
                     }}
                   >
                     <Text style={[
                       styles.dropdownItemText,
-                      selectedStorage === item.value && styles.dropdownItemTextSelected,
+                      selectedStorage === item.value && {
+                        color: item.value === '' ? '#333' : '#fff',
+                        fontWeight: '700',
+                      },
                     ]}>
                       {item.label}
                     </Text>
@@ -370,16 +388,20 @@ export default function HomeScreen() {
                     key={item.value}
                     style={[
                       styles.dropdownItem,
-                      selectedCategory === item.value && styles.dropdownItemSelected,
+                      selectedCategory === item.value && {
+                        backgroundColor: item.value === '전체' ? '#e0e0e0' : (CATEGORY_COLORS[item.label as keyof typeof CATEGORY_COLORS] || '#fff'),
+                      },
                     ]}
                     onPress={() => {
                       setSelectedCategory(item.value);
-                      toggleCategoryDropdown();
                     }}
                   >
                     <Text style={[
                       styles.dropdownItemText,
-                      selectedCategory === item.value && styles.dropdownItemTextSelected,
+                      selectedCategory === item.value && {
+                        color: item.value === '전체' ? '#333' : (item.label === '유제품' ? '#fff' : '#fff'),
+                        fontWeight: '700',
+                      },
                     ]}>
                       {item.label}
                     </Text>
@@ -746,7 +768,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   dropdownItemSelected: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   dropdownItemText: {
     fontSize: 14,
@@ -754,7 +776,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dropdownItemTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: '700',
   },
 }); 

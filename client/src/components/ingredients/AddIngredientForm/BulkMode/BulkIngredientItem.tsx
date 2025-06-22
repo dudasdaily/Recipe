@@ -56,14 +56,16 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag, index }: 
         <Ionicons name="reorder-three" size={22} color="#bbb" />
       </TouchableOpacity>
       <View style={[styles.fields, { overflow: 'visible' }]}>
-          <Text style={[styles.labelTitle, { marginBottom: 8, color: '#666', fontSize: 18 }]}>item {(typeof index === 'number' && !isNaN(index)) ? index + 1 : '-'}</Text>
-          <Text style={styles.labelTitle}>재료명</Text>
-        <TextInput
-            style={[styles.input, { marginBottom: 8 }]}
-          placeholder="재료명"
-          value={item.name}
-          onChangeText={(text) => onUpdate({ name: text })}
-        />
+          <Text style={[styles.labelTitle, { marginBottom: 8, color: '#666', fontSize: 18 }]}>재료 {(typeof index === 'number' && !isNaN(index)) ? index + 1 : '-'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={styles.labelTitle}>재료명</Text>
+            <TextInput
+              style={[styles.input, { flex: 1, marginBottom: 0, marginLeft: 8 }]}
+              placeholder="재료명"
+              value={item.name}
+              onChangeText={(text) => onUpdate({ name: text })}
+            />
+          </View>
           <Text style={styles.labelTitle}>카테고리</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <CategorySelector
@@ -124,16 +126,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#fafbfc',
+    backgroundColor: '#fff',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bdbdbd',
     padding: 12,
     marginBottom: 8,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
-    borderWidth: 1,
-    borderColor: '#bbb',
   },
   dragHandle: {
     paddingRight: 8,
@@ -144,8 +146,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 10,
     fontSize: 15,

@@ -9,7 +9,7 @@ const CATEGORY_COLORS: { [key: string]: string } = {
   '과일': '#FFC107',
   '육류': '#F44336',
   '수산물': '#2196F3',
-  '유제품': '#FFFFFF',
+  '유제품': '#E1BEE7',
   '기타': '#9E9E9E',
 };
 
@@ -48,7 +48,7 @@ export function CategorySelector({ value, onChange, categories = DEFAULT_CATEGOR
             <Text style={[
               styles.text, 
               isSelected && {
-                color: category === '유제품' ? '#000' : '#fff',
+                color: '#fff',
                 fontWeight: '700',
               }
             ]}>
