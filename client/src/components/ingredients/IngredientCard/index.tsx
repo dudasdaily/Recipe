@@ -422,86 +422,86 @@ export const IngredientCard = ({
         ]}
         {...(!selectionMode && !minimalView ? panResponder.panHandlers : {})}
       > 
-        {/* 사진: 맨 왼쪽 */}
-        {!hideImage && (
-          <Image
-            source={imageUrl}
-            style={{ width: 64, height: 64, borderRadius: 32, marginRight: 15, backgroundColor: '#eee' }}
-            resizeMode="cover"
-          />
-        )}
-        {/* 텍스트 정보 (이름, 수량, 유통기한만) */}
-        <View style={{ flex: 1 }}>
-          <TouchableOpacity
-            style={{ width: '100%' }}
-            activeOpacity={0.95}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
+      {/* 사진: 맨 왼쪽 */}
+      {!hideImage && (
+        <Image
+          source={imageUrl}
+          style={{ width: 64, height: 64, borderRadius: 32, marginRight: 15, backgroundColor: '#eee' }}
+          resizeMode="cover"
+        />
+      )}
+      {/* 텍스트 정보 (이름, 수량, 유통기한만) */}
+      <View style={{ flex: 1 }}>
+        <TouchableOpacity
+          style={{ width: '100%' }}
+          activeOpacity={0.95}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
             onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : resetSwipe}
-            onLongPress={onLongPress}
+          onLongPress={onLongPress}
+        >
+          <Title compact={compact} style={{ fontSize: compact ? 16 : 16 }}>{ingredient.name}</Title>
+          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>수량: {ingredient.quantity}</InfoText>
+          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>{expiryLabel}</InfoText>
+        </TouchableOpacity>
+      </View>
+      {/* 선택/편집 버튼 등은 기존대로 오른쪽에 유지, D-day는 연필 아이콘 왼쪽에 별도 표시 */}
+      {selectionMode && (
+        <View style={{
+          width: 28,
+          height: 28,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 8,
+          backgroundColor: isSelected ? '#007AFF' : '#fff',
+          borderWidth: isSelected ? 0 : 1.5,
+          borderColor: isSelected ? 'transparent' : '#bbb',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.10,
+          shadowRadius: 2,
+          elevation: 2,
+          marginLeft: 8,
+        }}>
+          <TouchableOpacity
+            onPress={() => onSelect && onSelect(ingredient.id)}
+            hitSlop={8}
+            activeOpacity={0.7}
+            style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
           >
-            <Title compact={compact} style={{ fontSize: compact ? 16 : 16 }}>{ingredient.name}</Title>
-            <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>수량: {ingredient.quantity}</InfoText>
-            <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>{expiryLabel}</InfoText>
+            {isSelected && (
+              <Ionicons
+                name="checkmark"
+                size={20}
+                color={'#fff'}
+              />
+            )}
           </TouchableOpacity>
         </View>
-        {/* 선택/편집 버튼 등은 기존대로 오른쪽에 유지, D-day는 연필 아이콘 왼쪽에 별도 표시 */}
-        {selectionMode && (
-          <View style={{
-            width: 28,
-            height: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 8,
-            backgroundColor: isSelected ? '#007AFF' : '#fff',
-            borderWidth: isSelected ? 0 : 1.5,
-            borderColor: isSelected ? 'transparent' : '#bbb',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.10,
-            shadowRadius: 2,
-            elevation: 2,
-            marginLeft: 8,
-          }}>
-            <TouchableOpacity
-              onPress={() => onSelect && onSelect(ingredient.id)}
-              hitSlop={8}
-              activeOpacity={0.7}
-              style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
-            >
-              {isSelected && (
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color={'#fff'}
-                />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-        {!selectionMode && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
-            {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
-            <Text style={{ marginRight: 10, color: 'black', fontWeight: 'light', fontSize: 23}}>
-              {getDDay(ingredient.expiry_date)}
-            </Text>
-            <TouchableOpacity
-              onPress={() => onEdit && onEdit(ingredient)}
-              style={{
-                width: 32,
-                height: 32,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 8,
-                backgroundColor: '#f8f9fa',
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="pencil" size={16} color="#000" />
-            </TouchableOpacity>
-          </View>
-        )}
-      </Animated.View>
+      )}
+      {!selectionMode && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+          {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
+          <Text style={{ marginRight: 10, color: 'black', fontWeight: 'light', fontSize: 23}}>
+            {getDDay(ingredient.expiry_date)}
+          </Text>
+          <TouchableOpacity
+            onPress={() => onEdit && onEdit(ingredient)}
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8,
+              backgroundColor: '#f8f9fa',
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pencil" size={16} color="#000" />
+          </TouchableOpacity>
+        </View>
+      )}
+    </Animated.View>
     </View>
   );
 };

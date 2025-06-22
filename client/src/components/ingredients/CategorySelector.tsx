@@ -32,19 +32,19 @@ export function CategorySelector({ value, onChange, categories = DEFAULT_CATEGOR
         const categoryColor = getCategoryColor(category);
         
         return (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.button,
+        <TouchableOpacity
+          key={category}
+          style={[
+            styles.button,
               isSelected && {
                 backgroundColor: categoryColor,
                 borderColor: categoryColor,
               },
-              idx === categories.length - 1 && { marginRight: 0 },
-            ]}
-            onPress={() => onChange(category)}
-            activeOpacity={0.85}
-          >
+            idx === categories.length - 1 && { marginRight: 0 },
+          ]}
+          onPress={() => onChange(category)}
+          activeOpacity={0.85}
+        >
             <Text style={[
               styles.text, 
               isSelected && {
@@ -54,7 +54,7 @@ export function CategorySelector({ value, onChange, categories = DEFAULT_CATEGOR
             ]}>
               {category}
             </Text>
-          </TouchableOpacity>
+        </TouchableOpacity>
         );
       })}
     </ScrollView>

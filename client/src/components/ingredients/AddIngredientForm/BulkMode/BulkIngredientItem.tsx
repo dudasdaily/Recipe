@@ -51,71 +51,71 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag, index }: 
       friction={1.7}
       rightThreshold={30}
     >
-      <View style={styles.container}>
-        <TouchableOpacity onLongPress={onDrag} style={styles.dragHandle}>
-          <Ionicons name="reorder-three" size={22} color="#bbb" />
-        </TouchableOpacity>
-        <View style={[styles.fields, { overflow: 'visible' }]}>
+    <View style={styles.container}>
+      <TouchableOpacity onLongPress={onDrag} style={styles.dragHandle}>
+        <Ionicons name="reorder-three" size={22} color="#bbb" />
+      </TouchableOpacity>
+      <View style={[styles.fields, { overflow: 'visible' }]}>
           <Text style={[styles.labelTitle, { marginBottom: 8, color: '#666', fontSize: 18 }]}>item {(typeof index === 'number' && !isNaN(index)) ? index + 1 : '-'}</Text>
           <Text style={styles.labelTitle}>재료명</Text>
-          <TextInput
+        <TextInput
             style={[styles.input, { marginBottom: 8 }]}
-            placeholder="재료명"
-            value={item.name}
-            onChangeText={(text) => onUpdate({ name: text })}
-          />
+          placeholder="재료명"
+          value={item.name}
+          onChangeText={(text) => onUpdate({ name: text })}
+        />
           <Text style={styles.labelTitle}>카테고리</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-            <CategorySelector
-              value={item.category}
-              onChange={(category) => onUpdate({ category })}
-              style={{ marginBottom: 0 }}
-            />
-          </ScrollView>
-          <StorageTypeSelector
-            value={item.storage_type}
-            onChange={(type) => onUpdate({ storage_type: type })}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+          <CategorySelector
+            value={item.category}
+            onChange={(category) => onUpdate({ category })}
+            style={{ marginBottom: 0 }}
           />
+        </ScrollView>
+        <StorageTypeSelector
+          value={item.storage_type}
+          onChange={(type) => onUpdate({ storage_type: type })}
+        />
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flex: 1 }}>
             <Text style={[styles.labelTitle, { marginRight: 8 }]}>유통기한</Text>
-            <ExpiryDatePicker
-              value={item.expiry_date}
-              onChange={(date) => onUpdate({ expiry_date: date })}
-              placeholder="유통기한 선택"
+        <ExpiryDatePicker
+          value={item.expiry_date}
+          onChange={(date) => onUpdate({ expiry_date: date })}
+          placeholder="유통기한 선택"
               style={{ marginBottom: 2, minWidth: 120, flex: 1 }}
-            />
+        />
           </View>
-          <View style={styles.quantityRow}>
-            <Text style={styles.label}>수량</Text>
-            <View style={styles.quantityControl}>
-              <TouchableOpacity
-                onPress={() => onUpdate({ quantity: Math.max(1, (item.quantity ?? 1) - 1) })}
-                style={styles.quantityBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.quantityBtnText}>-</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={styles.quantityInput}
-                keyboardType="number-pad"
-                value={String(item.quantity ?? 1)}
-                onChangeText={text => {
-                  const num = Math.max(1, parseInt(text.replace(/[^0-9]/g, ''), 10) || 1);
-                  onUpdate({ quantity: num });
-                }}
-                maxLength={3}
-              />
-              <TouchableOpacity
-                onPress={() => onUpdate({ quantity: (item.quantity ?? 1) + 1 })}
-                style={styles.quantityBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.quantityBtnText}>+</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.quantityRow}>
+          <Text style={styles.label}>수량</Text>
+          <View style={styles.quantityControl}>
+            <TouchableOpacity
+              onPress={() => onUpdate({ quantity: Math.max(1, (item.quantity ?? 1) - 1) })}
+              style={styles.quantityBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quantityBtnText}>-</Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.quantityInput}
+              keyboardType="number-pad"
+              value={String(item.quantity ?? 1)}
+              onChangeText={text => {
+                const num = Math.max(1, parseInt(text.replace(/[^0-9]/g, ''), 10) || 1);
+                onUpdate({ quantity: num });
+              }}
+              maxLength={3}
+            />
+            <TouchableOpacity
+              onPress={() => onUpdate({ quantity: (item.quantity ?? 1) + 1 })}
+              style={styles.quantityBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quantityBtnText}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
+    </View>
     </Swipeable>
   );
 }

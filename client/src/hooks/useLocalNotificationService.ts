@@ -80,29 +80,24 @@ export const useLocalNotificationService = () => {
     expiredIngredients: Ingredient[],
     expiringIngredients: Ingredient[]
   ) => {
+    // 임박 재료를 expiry_date 오름차순으로 정렬
+    const sortedExpiring = [...expiringIngredients].sort((a, b) => {
+      return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
+    });
+
     const messages: string[] = [];
 
-    // 유통기한 임박 메시지
-    if (expiringIngredients.length === 1) {
-      const ingredient = expiringIngredients[0];
-      const expiryDate = new Date(ingredient.expiry_date);
-      const today = new Date();
-      const daysLeft = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
-      messages.push(`${ingredient.name}의 유통기한이 ${daysLeft}일 남았습니다.`);
-    } else if (expiringIngredients.length > 1) {
-      const firstIngredient = expiringIngredients[0];
-      const remainingCount = expiringIngredients.length - 1;
-      
-      messages.push(`${firstIngredient.name} 외 ${remainingCount}개의 재료의 유통기한이 임박했습니다.`);
+    if (sortedExpiring.length === 1) {
+      messages.push(`${sortedExpiring[0].name} 재료의 유통기한이 임박했습니다.`);
+    } else if (sortedExpiring.length > 1) {
+      messages.push(`${sortedExpiring[0].name} 외 ${sortedExpiring.length - 1}개의 재료의 유통기한이 임박했습니다.`);
     }
 
-    // 유통기한 만료 메시지
     if (expiredIngredients.length > 0) {
-      messages.push(`${expiredIngredients.length}개의 재료가 유통기한이 지났습니다.`);
+      messages.push(`\n${expiredIngredients.length}개의 재료가 유통기한이 지났습니다.`);
     }
 
-    return messages.join(' ');
+    return messages.join('');
   }, []);
 
   // 로컬 알림 스케줄링 (중복 방지)
