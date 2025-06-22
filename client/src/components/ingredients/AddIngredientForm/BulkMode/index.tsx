@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useState } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
@@ -10,12 +10,17 @@ import { CategorySelector } from '@/components/ingredients/CategorySelector';
 import { StorageTypeSelector } from '@/components/ingredients/StorageTypeSelector';
 import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
-import { ImageRecognitionActions } from '../ImageRecognitionActions';
+import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
+import { Swipeable } from 'react-native-gesture-handler';
 import { analyzeIngredientImage } from '@/services/api/vision';
 import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
 import { useReceiptStore } from '@/stores/receipt';
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
+
+type BulkModeFormProps = {
+  showBulkSettings?: boolean;
+};
 
 const initialItem: BulkFormData = {
   name: '',
@@ -26,16 +31,35 @@ const initialItem: BulkFormData = {
   expiry_date: '',
 };
 
-export function BulkModeForm() {
+export function BulkModeForm({ showBulkSettings = false }: BulkModeFormProps) {
   const [items, setItems] = useState<BulkFormData[]>([initialItem]);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
   const [showReceiptFlow, setShowReceiptFlow] = useState(false);
-  const [showBulkSettings, setShowBulkSettings] = useState(false);
   const queryClient = useQueryClient();
+  const slideAnim = useRef(new Animated.Value(-100)).current;
 
   // 영수증 스토어에서 편집된 아이템들 가져오기
   const { editableItems, resetState } = useReceiptStore();
+
+  // showBulkSettings가 변경될 때 애니메이션 실행
+  useEffect(() => {
+    if (showBulkSettings) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 120,
+        friction: 10,
+      }).start();
+    } else {
+      Animated.spring(slideAnim, {
+        toValue: -100,
+        useNativeDriver: true,
+        tension: 120,
+        friction: 12,
+      }).start();
+    }
+  }, [showBulkSettings, slideAnim]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: BulkFormData[]) =>
@@ -156,65 +180,85 @@ export function BulkModeForm() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ImageRecognitionActions
-          onPressReceipt={handleReceiptScan}
-          onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
-          onImagePicked={handleImagePicked}
-          showBulkSettings={showBulkSettings}
-          onToggleBulkSettings={() => setShowBulkSettings(!showBulkSettings)}
-        />
         <View style={[styles.flexArea, { minHeight: 200 }]}>
-          {showBulkSettings && (
-            <>
-              <View style={styles.bulkSettingRow}>
-                <Text style={styles.bulkLabel}>일괄 카테고리</Text>
-                <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
-              </View>
-              <View style={styles.bulkSettingRow}>
-                <Text style={styles.bulkLabel}>일괄 보관방법</Text>
-                <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
-              </View>
-            </>
-          )}
-          
-          <DraggableFlatList<BulkFormData>
-            data={items}
-            renderItem={({ item, drag, isActive, index }: any) => (
-              <BulkIngredientItem
-                item={item}
-                index={typeof index === 'number' ? index : items.findIndex(i => i === item)}
-                onUpdate={(data) => {
-                  const idx = items.findIndex((i) => i === item);
-                  handleUpdateItem(idx, data);
-                }}
-                onRemove={() => {
-                  const idx = items.findIndex((i) => i === item);
-                  handleRemoveItem(idx);
-                }}
-                onDrag={drag}
-              />
+          <Animated.View
+            style={[
+              styles.bulkSettingsContainer,
+              {
+                transform: [{ translateY: slideAnim }],
+                opacity: slideAnim.interpolate({
+                  inputRange: [-100, 0],
+                  outputRange: [0, 1],
+                  extrapolate: 'clamp',
+                }),
+              },
+            ]}
+          >
+            {showBulkSettings && (
+              <>
+                <View style={styles.bulkSettingRow}>
+                  <Text style={styles.bulkLabel}>일괄 카테고리</Text>
+                  <CategorySelector value={bulkCategory} onChange={handleBulkCategory} />
+                </View>
+                <View style={styles.bulkSettingRow}>
+                  <Text style={styles.bulkLabel}>일괄 보관방법</Text>
+                  <StorageTypeSelector value={bulkStorage as any} onChange={handleBulkStorage} />
+                </View>
+              </>
             )}
-            keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
-            onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
-            contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 100 }]}
-            style={{ minHeight: 200, maxHeight: '100%' }}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>추가할 재료가 없습니다. "+" 버튼을 눌러주세요.</Text>
-              </View>
-            }
-            ListFooterComponent={
-              <View style={styles.addButtonContainer}>
-                <TouchableOpacity
-                  style={styles.addItemButton}
-                  onPress={handleAddItem}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.addItemButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            }
-          />
+          </Animated.View>
+          
+          <Animated.View
+            style={{
+              flex: 1,
+              transform: [{
+                translateY: slideAnim.interpolate({
+                  inputRange: [-100, 0],
+                  outputRange: [0, 30], // 일괄 설정의 높이만큼 밀림 (120에서 80으로 줄임)
+                  extrapolate: 'clamp',
+                })
+              }]
+            }}
+          >
+            <DraggableFlatList<BulkFormData>
+              data={items}
+              renderItem={({ item, drag, isActive, index }: any) => (
+                <BulkIngredientItem
+                  item={item}
+                  index={typeof index === 'number' ? index : items.findIndex(i => i === item)}
+                  onUpdate={(data) => {
+                    const idx = items.findIndex((i) => i === item);
+                    handleUpdateItem(idx, data);
+                  }}
+                  onRemove={() => {
+                    const idx = items.findIndex((i) => i === item);
+                    handleRemoveItem(idx);
+                  }}
+                  onDrag={drag}
+                />
+              )}
+              keyExtractor={(_item: BulkFormData, index: number) => index.toString()}
+              onDragEnd={({ data }: { data: BulkFormData[] }) => setItems(data)}
+              contentContainerStyle={[styles.list, { flexGrow: 1, minHeight: 200, paddingBottom: 100 }]}
+              style={{ minHeight: 200, maxHeight: '100%' }}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>추가할 재료가 없습니다. "+" 버튼을 눌러주세요.</Text>
+                </View>
+              }
+              ListFooterComponent={
+                <View style={styles.addButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.addItemButton}
+                    onPress={handleAddItem}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.addItemButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              }
+            />
+          </Animated.View>
         </View>
         
         <View style={styles.footerArea}>
@@ -266,9 +310,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   footerArea: {
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopWidth: 0,
   },
   footer: {
     paddingHorizontal: 16,
@@ -287,14 +329,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   addItemButtonText: {
     color: '#fff',
@@ -316,5 +350,8 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#888',
     fontSize: 16,
+  },
+  bulkSettingsContainer: {
+    overflow: 'hidden',
   },
 }); 

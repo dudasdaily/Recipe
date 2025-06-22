@@ -39,7 +39,6 @@ export function CategorySelector({ value, onChange, categories = DEFAULT_CATEGOR
               isSelected && {
                 backgroundColor: categoryColor,
                 borderColor: categoryColor,
-                shadowColor: categoryColor,
               },
               idx === categories.length - 1 && { marginRight: 0 },
             ]}
@@ -72,17 +71,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: 18,
-    backgroundColor: '#F2F4F7',
+    backgroundColor: '#fff',
     marginRight: 8,
     borderWidth: 1,
-    borderColor: 'transparent',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#ddd',
   },
   text: {
-    color: '#222',
+    color: '#666',
     fontSize: 14,
     fontWeight: '500',
   },

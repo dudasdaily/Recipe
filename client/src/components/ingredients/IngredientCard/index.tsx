@@ -67,12 +67,23 @@ export const IngredientCard = ({
       return !selectionMode && !minimalView;
     },
     onMoveShouldSetPanResponder: (evt, gestureState) => {
-      // 가로 스와이프일 때만 반응하고, 선택 모드가 아닐 때만 작동
-      return !selectionMode && !minimalView && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      // 선택 모드/미니멀 뷰가 아니고, 가로 스와이프이며, 삭제창이 열려있지 않으면 오른쪽(+dx) 스와이프 불가
+      if (!selectionMode && !minimalView) {
+        if (!isSwipeDeleteVisible && gestureState.dx > 0) {
+          return false;
+        }
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      }
+      return false;
     },
     onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-      // 더 적극적으로 가로 스와이프 제스처를 캡처
-      return !selectionMode && !minimalView && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 8;
+      if (!selectionMode && !minimalView) {
+        if (!isSwipeDeleteVisible && gestureState.dx > 0) {
+          return false;
+        }
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 8;
+      }
+      return false;
     },
     onPanResponderTerminationRequest: () => false, // 다른 컴포넌트가 제스처를 가져가는 것을 방지
     onPanResponderGrant: () => {
@@ -83,14 +94,20 @@ export const IngredientCard = ({
       onScrollToggle?.(false);
     },
     onPanResponderMove: (evt, gestureState) => {
-      // 오른쪽에서 왼쪽 스와이프만 허용 (음수 방향), 최대 -100까지만
-      const newValue = Math.max(-100, Math.min(0, gestureState.dx));
-      translateX.setValue(newValue);
-      
-      // 스와이프 거리에 따라 삭제 버튼 투명도 조절 (0 ~ 1)
-      const swipeDistance = Math.abs(newValue);
-      const opacity = Math.min(1, swipeDistance / SWIPE_THRESHOLD);
-      deleteOpacity.setValue(opacity);
+      // 왼쪽으로 스와이프할 때만 이동 허용 (오른쪽 스와이프는 삭제창이 열려있을 때만)
+      if (gestureState.dx < 0 || (gestureState.dx > 0 && isSwipeDeleteVisible)) {
+        // 오른쪽 스와이프는 0을 넘지 않도록 제한
+        const newX = gestureState.dx < 0 ? Math.max(gestureState.dx, -80) : Math.min(gestureState.dx, 0);
+        
+        // 부드러운 애니메이션으로 따라오도록 설정
+        translateX.setValue(newX);
+        
+        // 삭제 버튼 투명도 조절 (왼쪽 스와이프 시에만)
+        if (gestureState.dx < 0) {
+          const opacity = Math.min(Math.abs(gestureState.dx) / 80, 1);
+          deleteOpacity.setValue(opacity);
+        }
+      }
     },
     onPanResponderRelease: (evt, gestureState) => {
       if (gestureState.dx < -SWIPE_THRESHOLD) {
@@ -109,6 +126,24 @@ export const IngredientCard = ({
           })
         ]).start(() => {
           // 애니메이션 완료 후 스크롤 활성화 (삭제 버튼이 고정된 상태에서는 스크롤 가능)
+          onScrollToggle?.(true);
+        });
+      } else if (gestureState.dx > SWIPE_THRESHOLD && isSwipeDeleteVisible) {
+        // 오른쪽으로 충분히 밀었고 삭제창이 열려있으면 닫기
+        setIsSwipeDeleteVisible(false);
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(deleteOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          // 애니메이션 완료 후 스크롤 활성화
           onScrollToggle?.(true);
         });
       } else {
@@ -239,6 +274,49 @@ export const IngredientCard = ({
     const translateX = dragX.interpolate({
       inputRange: [-80, 0],
       outputRange: [0, 20],
+      extrapolate: 'clamp',
+    });
+    return (
+      <Animated.View style={{
+        transform: [{ scale }, { translateX }],
+        opacity,
+        backgroundColor: '#ff3b30',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 60,
+        height: '95%',
+        borderRadius: 12,
+        alignSelf: 'center',
+        marginVertical: 0,
+        marginBottom: 7,
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+      }}>
+        <TouchableOpacity onPress={() => onDelete && onDelete(ingredient.id)} activeOpacity={0.8} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Ionicons name="close" size={32} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  // renderLeftActions 추가
+  const renderLeftActions = (progress: any, dragX: any) => {
+    const scale = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0.7, 1],
+      extrapolate: 'clamp',
+    });
+    const opacity = dragX.interpolate({
+      inputRange: [0, 20, 80],
+      outputRange: [0.5, 0.7, 1],
+      extrapolate: 'clamp',
+    });
+    const translateX = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [-20, 0],
       extrapolate: 'clamp',
     });
     return (

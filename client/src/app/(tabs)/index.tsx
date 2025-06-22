@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useIngredients, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
@@ -8,7 +8,6 @@ import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm'
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Ingredient } from '@/types/api';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
 
 const EXPIRY_THRESHOLD_DAYS = 7;
@@ -28,6 +27,8 @@ const CATEGORIES = [
   { label: '기타', value: '기타' },
 ];
 
+const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
+
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [storageOpen, setStorageOpen] = useState(false);
@@ -41,10 +42,73 @@ export default function HomeScreen() {
   const [isScrollEnabled, setIsScrollEnabled] = useState(true);
   
   const insets = useSafeAreaInsets();
+  
+  // 애니메이션 값들
+  const storageAnim = useRef(new Animated.Value(0)).current;
+  const categoryAnim = useRef(new Animated.Value(0)).current;
+  const storageRotateAnim = useRef(new Animated.Value(0)).current;
+  const categoryRotateAnim = useRef(new Animated.Value(0)).current;
 
   const { data, isLoading, error, refetch } = useIngredients();
   const { mutate: deleteMutate } = useDeleteIngredient();
   const ingredients = data || [];
+
+  // 드롭다운 애니메이션 함수들
+  const toggleStorageDropdown = () => {
+    if (categoryOpen) {
+      setCategoryOpen(false);
+      Animated.timing(categoryAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        duration: 250,
+      }).start();
+      Animated.timing(categoryRotateAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        duration: 250,
+      }).start();
+    }
+    
+    setStorageOpen(!storageOpen);
+    Animated.timing(storageAnim, {
+      toValue: !storageOpen ? 1 : 0,
+      useNativeDriver: false,
+      duration: 250,
+    }).start();
+    Animated.timing(storageRotateAnim, {
+      toValue: !storageOpen ? 1 : 0,
+      useNativeDriver: false,
+      duration: 250,
+    }).start();
+  };
+
+  const toggleCategoryDropdown = () => {
+    if (storageOpen) {
+      setStorageOpen(false);
+      Animated.timing(storageAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        duration: 250,
+      }).start();
+      Animated.timing(storageRotateAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        duration: 250,
+      }).start();
+    }
+    
+    setCategoryOpen(!categoryOpen);
+    Animated.timing(categoryAnim, {
+      toValue: !categoryOpen ? 1 : 0,
+      useNativeDriver: false,
+      duration: 250,
+    }).start();
+    Animated.timing(categoryRotateAnim, {
+      toValue: !categoryOpen ? 1 : 0,
+      useNativeDriver: false,
+      duration: 250,
+    }).start();
+  };
 
   useEffect(() => {
     console.log('🏠 홈 화면 - 식재료 데이터 상태:', {
@@ -203,36 +267,117 @@ export default function HomeScreen() {
           {/* 보관방법/카테고리 드롭다운 한 줄 */}
           <View style={styles.rowContainer}>
             <View style={styles.selectBox}>
-              <DropDownPicker
-                open={storageOpen}
-                value={selectedStorage}
-                items={STORAGE_TYPES}
-                setOpen={setStorageOpen}
-                setValue={setSelectedStorage}
-                setItems={() => {}}
-                placeholder="보관방법"
-                style={{ height: 35, minHeight: 35, borderColor: '#bbb' }}
-                ArrowUpIconComponent={({style}) => <Ionicons name="chevron-up" size={20} color="#888" style={style} />}
-                ArrowDownIconComponent={({style}) => <Ionicons name="chevron-down" size={20} color="#888" style={style} />}
-                zIndex={2000}
-                listMode="SCROLLVIEW"
-              />
+              <TouchableOpacity onPress={toggleStorageDropdown} style={styles.dropdownButton}>
+                <Animated.View style={styles.dropdownContainer}>
+                  <Animated.Text style={styles.dropdownText}>
+                    {STORAGE_TYPES.find(item => item.value === selectedStorage)?.label || '보관방법'}
+                  </Animated.Text>
+                  <Animated.View
+                    style={{
+                      transform: [{
+                        rotate: storageRotateAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '180deg'],
+                        }),
+                      }],
+                    }}
+                  >
+                    <Ionicons name="chevron-down" size={16} color="#888" />
+                  </Animated.View>
+                </Animated.View>
+              </TouchableOpacity>
+              
+              {/* 보관방법 드롭다운 목록 */}
+              <Animated.View
+                style={[
+                  styles.dropdownList,
+                  {
+                    maxHeight: storageAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 200],
+                    }),
+                    opacity: storageAnim,
+                  },
+                ]}
+              >
+                {STORAGE_TYPES.map((item, index) => (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.dropdownItem,
+                      selectedStorage === item.value && styles.dropdownItemSelected,
+                    ]}
+                    onPress={() => {
+                      setSelectedStorage(item.value);
+                      toggleStorageDropdown();
+                    }}
+                  >
+                    <Text style={[
+                      styles.dropdownItemText,
+                      selectedStorage === item.value && styles.dropdownItemTextSelected,
+                    ]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </Animated.View>
             </View>
+            
             <View style={styles.selectBox}>
-              <DropDownPicker
-                open={categoryOpen}
-                value={selectedCategory}
-                items={CATEGORIES}
-                setOpen={setCategoryOpen}
-                setValue={setSelectedCategory}
-                setItems={() => {}}
-                placeholder="카테고리"
-                style={{ height: 35, minHeight: 35, borderColor: '#bbb' }}
-                ArrowUpIconComponent={({style}) => <Ionicons name="chevron-up" size={20} color="#888" style={style} />}
-                ArrowDownIconComponent={({style}) => <Ionicons name="chevron-down" size={20} color="#888" style={style} />}
-                zIndex={1000}
-                listMode="SCROLLVIEW"
-              />
+              <TouchableOpacity onPress={toggleCategoryDropdown} style={styles.dropdownButton}>
+                <Animated.View style={styles.dropdownContainer}>
+                  <Animated.Text style={styles.dropdownText}>
+                    {CATEGORIES.find(item => item.value === selectedCategory)?.label || '카테고리'}
+                  </Animated.Text>
+                  <Animated.View
+                    style={{
+                      transform: [{
+                        rotate: categoryRotateAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '180deg'],
+                        }),
+                      }],
+                    }}
+                  >
+                    <Ionicons name="chevron-down" size={16} color="#888" />
+                  </Animated.View>
+                </Animated.View>
+              </TouchableOpacity>
+              
+              {/* 카테고리 드롭다운 목록 */}
+              <Animated.View
+                style={[
+                  styles.dropdownList,
+                  {
+                    maxHeight: categoryAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 300],
+                    }),
+                    opacity: categoryAnim,
+                  },
+                ]}
+              >
+                {CATEGORIES.map((item, index) => (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.dropdownItem,
+                      selectedCategory === item.value && styles.dropdownItemSelected,
+                    ]}
+                    onPress={() => {
+                      setSelectedCategory(item.value);
+                      toggleCategoryDropdown();
+                    }}
+                  >
+                    <Text style={[
+                      styles.dropdownItemText,
+                      selectedCategory === item.value && styles.dropdownItemTextSelected,
+                    ]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </Animated.View>
             </View>
           </View>
           <Text style={{ marginLeft: 25, fontSize: 14, color: '#666', fontWeight: 'bold', marginBottom: 2 }}>등록 {filteredIngredients.length}개</Text>
@@ -541,5 +686,67 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     opacity: 0.5,
+  },
+  dropdownButton: {
+    height: 35,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
+  dropdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  dropdownArrow: {
+    marginLeft: 8,
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#f8f9fa',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  dropdownItemTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
 }); 
