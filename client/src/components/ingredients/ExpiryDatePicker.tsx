@@ -189,7 +189,6 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
                 display="spinner"
                 onChange={handleDateChange}
                 style={[styles.datePicker, !tempHasExpiry && styles.datePickerInactive]}
-                minimumDate={new Date()}
                 textColor={tempHasExpiry ? "#000" : "#999"}
                 disabled={!tempHasExpiry}
               />
