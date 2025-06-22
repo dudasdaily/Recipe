@@ -4,6 +4,7 @@ import { Title, InfoText } from './styles';
 import { View, TouchableOpacity, PanResponder, GestureResponderEvent, Animated, Text, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Swipeable } from 'react-native-gesture-handler';
 
 // D-day 계산 함수 추가
 function getDDay(expiryDate: string) {
@@ -18,6 +19,8 @@ function getDDay(expiryDate: string) {
   if (diff === 0) return 'D-day';
   return `D+${Math.abs(diff)}`;
 }
+
+type IngredientCardPropsWithDelete = IngredientCardProps & { onDelete?: (id: number) => void };
 
 export const IngredientCard = ({
   ingredient,
@@ -220,6 +223,49 @@ export const IngredientCard = ({
   const imageUrl = ingredient.imageUrl
     ? { uri: ingredient.imageUrl }
     : require('../../../../assets/images/paprika.png');
+
+  // Swipeable 삭제 버튼 렌더러 (더 부드럽고 멋지게)
+  const renderRightActions = (progress: any, dragX: any) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0.7],
+      extrapolate: 'clamp',
+    });
+    const opacity = dragX.interpolate({
+      inputRange: [-80, -20, 0],
+      outputRange: [1, 0.7, 0.5],
+      extrapolate: 'clamp',
+    });
+    const translateX = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [0, 20],
+      extrapolate: 'clamp',
+    });
+    return (
+      <Animated.View style={{
+        transform: [{ scale }, { translateX }],
+        opacity,
+        backgroundColor: '#ff3b30',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 60,
+        height: '95%',
+        borderRadius: 12,
+        alignSelf: 'center',
+        marginVertical: 0,
+        marginBottom: 7,
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+      }}>
+        <TouchableOpacity onPress={() => onDelete && onDelete(ingredient.id)} activeOpacity={0.8} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Ionicons name="close" size={32} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   if (minimalView) {
     // 유통기한 D-day에 따라 배경색 결정
