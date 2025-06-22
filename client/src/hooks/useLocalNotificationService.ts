@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useLocalNotificationStore } from '../stores/localNotification';
 import { useIngredients } from './query/useIngredients';
@@ -17,6 +17,12 @@ Notifications.setNotificationHandler({
 export const useLocalNotificationService = () => {
   const { enabled, time, daysThreshold } = useLocalNotificationStore();
   const { data: ingredients = [] } = useIngredients();
+  
+  // 중복 스케줄링 방지를 위한 ref
+  const isSchedulingRef = useRef(false);
+  const lastScheduledSettingsRef = useRef<string>('');
+  const notificationListenerRef = useRef<any>(null);
+  const lastNotificationIdRef = useRef<string>('');
 
   // 알림 권한 요청
   const requestPermissions = useCallback(async () => {
@@ -99,42 +105,61 @@ export const useLocalNotificationService = () => {
     return messages.join(' ');
   }, []);
 
-  // 로컬 알림 스케줄링
+  // 로컬 알림 스케줄링 (중복 방지)
   const scheduleNotification = useCallback(async () => {
+    // 중복 스케줄링 방지
+    if (isSchedulingRef.current) {
+      console.log('⏸️ 이미 스케줄링 중이므로 건너뜀');
+      return;
+    }
+
+    // 설정 변경 확인 (중복 스케줄링 방지)
+    const currentSettings = `${enabled}-${time}-${daysThreshold}`;
+    if (lastScheduledSettingsRef.current === currentSettings && enabled) {
+      console.log('⏸️ 설정이 변경되지 않아 스케줄링 건너뜀');
+      return;
+    }
+
     if (!enabled) {
       console.log('📴 알림이 비활성화되어 있음');
       await Notifications.cancelAllScheduledNotificationsAsync();
+      lastScheduledSettingsRef.current = currentSettings;
       return;
     }
 
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) {
-      console.log('❌ 알림 권한이 없음');
-      return;
-    }
+    isSchedulingRef.current = true;
 
-    const { expiredIngredients, expiringIngredients } = analyzeIngredients(ingredients);
+    try {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        console.log('❌ 알림 권한이 없음');
+        return;
+      }
 
-    // 기존 알림 취소
-    await Notifications.cancelAllScheduledNotificationsAsync();
+      const { expiredIngredients, expiringIngredients } = analyzeIngredients(ingredients);
 
-    // 시간 파싱
-    const [hours, minutes] = time.split(':').map(Number);
-
-    // 첫 번째 알림 시간 계산
-    const firstNotificationTime = new Date();
-    firstNotificationTime.setHours(hours, minutes, 0, 0);
-    
-    // 만약 오늘의 알림 시간이 이미 지났다면 내일로 설정
-    if (firstNotificationTime <= new Date()) {
-      firstNotificationTime.setDate(firstNotificationTime.getDate() + 1);
-    }
-
-    // 알림할 내용이 있을 때만 스케줄링
-    if (expiredIngredients.length > 0 || expiringIngredients.length > 0) {
-      const message = createNotificationMessage(expiredIngredients, expiringIngredients);
+      // 기존 알림 취소
+      await Notifications.cancelAllScheduledNotificationsAsync();
       
-      try {
+      // 취소 후 잠시 대기 (시스템 처리 시간 확보)
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 알림할 내용이 있을 때만 스케줄링
+      if (expiredIngredients.length > 0 || expiringIngredients.length > 0) {
+        const message = createNotificationMessage(expiredIngredients, expiringIngredients);
+        
+        // 시간 파싱
+        const [hours, minutes] = time.split(':').map(Number);
+
+        // 첫 번째 알림 시간 계산
+        const firstNotificationTime = new Date();
+        firstNotificationTime.setHours(hours, minutes, 0, 0);
+        
+        // 만약 오늘의 알림 시간이 이미 지났다면 내일로 설정
+        if (firstNotificationTime <= new Date()) {
+          firstNotificationTime.setDate(firstNotificationTime.getDate() + 1);
+        }
+        
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
             title: '유통기한 알림',
@@ -154,13 +179,21 @@ export const useLocalNotificationService = () => {
         console.log(`✅ 로컬 알림 스케줄됨: ${firstNotificationTime.toLocaleString()}`);
         console.log(`📝 알림 내용: ${message}`);
         console.log(`🆔 알림 ID: ${notificationId}`);
-      } catch (error) {
-        console.error('❌ 로컬 알림 스케줄링 실패:', error);
+        
+        // 마지막 알림 ID 저장
+        lastNotificationIdRef.current = notificationId;
+      } else {
+        console.log('📭 현재 알림할 유통기한 관련 재료가 없음');
       }
-    } else {
-      console.log('📭 현재 알림할 유통기한 관련 재료가 없음');
+
+      // 설정 저장
+      lastScheduledSettingsRef.current = currentSettings;
+    } catch (error) {
+      console.error('❌ 로컬 알림 스케줄링 실패:', error);
+    } finally {
+      isSchedulingRef.current = false;
     }
-  }, [enabled, time, daysThreshold, ingredients, requestPermissions, analyzeIngredients, createNotificationMessage]);
+  }, [enabled, time, daysThreshold, ingredients]);
 
   // 즉시 테스트 알림 발송
   const sendTestNotification = useCallback(async () => {
@@ -190,42 +223,109 @@ export const useLocalNotificationService = () => {
   const cancelAllNotifications = useCallback(async () => {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
+      lastScheduledSettingsRef.current = ''; // 설정 초기화
+      lastNotificationIdRef.current = ''; // 알림 ID 초기화
       console.log('🗑️ 모든 알림 취소됨');
     } catch (error) {
       console.error('❌ 알림 취소 실패:', error);
     }
   }, []);
 
-  // 알림 수신 리스너 (매일 반복을 위한)
+  // 현재 스케줄된 알림 확인 (디버깅용)
+  const checkScheduledNotifications = useCallback(async () => {
+    try {
+      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('📋 현재 스케줄된 알림:', {
+        총개수: scheduledNotifications.length,
+        알림목록: scheduledNotifications.map(notification => ({
+          id: notification.identifier,
+          title: notification.content.title,
+          body: notification.content.body,
+          trigger: notification.trigger,
+        }))
+      });
+      return scheduledNotifications;
+    } catch (error) {
+      console.error('❌ 스케줄된 알림 확인 실패:', error);
+      return [];
+    }
+  }, []);
+
+  // 알림 수신 리스너 (매일 반복을 위한) - 단일 인스턴스 보장
   useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener(notification => {
+    // 기존 리스너 제거
+    if (notificationListenerRef.current) {
+      notificationListenerRef.current.remove();
+      notificationListenerRef.current = null;
+    }
+
+    // 새 리스너 등록
+    notificationListenerRef.current = Notifications.addNotificationReceivedListener(notification => {
       const { data } = notification.request.content;
+      const notificationId = notification.request.identifier;
       
       // 유통기한 알림이 수신되면 다음 날 알림을 다시 스케줄
       if (data?.type === 'EXPIRY_ALERT' && enabled) {
-        console.log('📱 유통기한 알림 수신, 다음 날 알림 재스케줄링');
+        console.log(`📱 유통기한 알림 수신 (ID: ${notificationId}), 24시간 후 알림 재스케줄링 시작`);
         
-        // 1초 후에 다음 알림 스케줄 (현재 알림 처리 완료 후)
+        // 중복 수신 방지 - 같은 알림 ID면 무시
+        if (lastNotificationIdRef.current === notificationId) {
+          console.log('⏸️ 동일한 알림 ID로 이미 처리됨, 무시');
+          return;
+        }
+        
+        // 중복 스케줄링 방지 - 이미 스케줄링 중이면 무시
+        if (isSchedulingRef.current) {
+          console.log('⏸️ 이미 재스케줄링 중이므로 무시');
+          return;
+        }
+        
+        // 처리된 알림 ID 저장
+        lastNotificationIdRef.current = notificationId;
+        
+        // 설정 초기화하여 다음 날 알림 스케줄 가능하도록
         setTimeout(() => {
+          lastScheduledSettingsRef.current = '';
           scheduleNotification();
-        }, 1000);
+        }, 2000);
       }
     });
 
-    return () => subscription.remove();
-  }, [enabled, scheduleNotification]);
+    return () => {
+      if (notificationListenerRef.current) {
+        notificationListenerRef.current.remove();
+        notificationListenerRef.current = null;
+      }
+    };
+  }, []); // 의존성 제거하여 마운트 시에만 실행
 
-  // 설정 변경 시 알림 재스케줄링
+  // 설정 변경 시에만 알림 재스케줄링 (ingredients는 제외)
   useEffect(() => {
-    if (ingredients.length > 0) {
+    scheduleNotification();
+  }, [enabled, time, daysThreshold]); // scheduleNotification 의존성 제거
+
+  // 재료 데이터 변경 시 알림 내용 업데이트 (디바운싱 적용)
+  useEffect(() => {
+    if (!enabled || ingredients.length === 0) return;
+
+    // 설정이 초기화된 상태에서만 재료 변경 시 업데이트
+    const currentSettings = `${enabled}-${time}-${daysThreshold}`;
+    if (lastScheduledSettingsRef.current !== currentSettings) return;
+
+    const timeoutId = setTimeout(() => {
+      console.log('📦 재료 데이터 변경으로 인한 알림 내용 업데이트');
+      lastScheduledSettingsRef.current = ''; // 설정 초기화
       scheduleNotification();
-    }
-  }, [enabled, time, daysThreshold, ingredients, scheduleNotification]);
+    }, 1000); // 1초 디바운싱
+
+    return () => clearTimeout(timeoutId);
+  }, [ingredients]); // 의존성 배열 최소화
 
   return {
     scheduleNotification,
     sendTestNotification,
     cancelAllNotifications,
+    checkScheduledNotifications,
     requestPermissions,
   };
 }; 
