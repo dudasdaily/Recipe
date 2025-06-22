@@ -4,7 +4,6 @@ import { FlashList } from '@shopify/flash-list';
 import { useIngredients, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
 import { SearchBar } from '@/components/ingredients/SearchBar';
-import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
 import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -169,7 +168,6 @@ export default function HomeScreen() {
             />
           </View>
           <View style={{ height: 8 }} />
-          <ExpiryAlert ingredients={expiringIngredients} />
           {/* 보관방법/카테고리 드롭다운 한 줄 */}
           <View style={styles.rowContainer}>
             <View style={styles.selectBox}>
