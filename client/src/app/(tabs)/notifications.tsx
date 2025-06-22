@@ -1,357 +1,483 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-  Image,
-  Animated,
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Switch, 
+  TouchableOpacity, 
+  ScrollView, 
+  Modal, 
+  Platform,
+  Alert 
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NotificationHistory } from '@/types/api';
-import { useNotificationStore } from '@/stores/notification';
+import { useLocalNotificationStore } from '@/stores/localNotification';
+import { useLocalNotificationService } from '@/hooks/useLocalNotificationService';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function NotificationsScreen() {
-  const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
+  const [showTimePicker, setShowTimePicker] = useState(false);
   
   const {
-    notificationHistory,
-    clearNotificationHistory,
-    cleanupDuplicateNotifications,
-  } = useNotificationStore();
+    enabled,
+    time,
+    daysThreshold,
+    setEnabled,
+    setTime,
+    setDaysThreshold,
+  } = useLocalNotificationStore();
 
-  // 디버깅: 컴포넌트 마운트 시 히스토리 상태 출력
-  React.useEffect(() => {
-    console.log('📋 알림 히스토리 화면 로드됨:', {
-      totalCount: notificationHistory.length,
-      history: notificationHistory.map(item => ({
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        sentAt: item.sentAt
-      }))
-    });
-    
-    // 중복 알림이 있으면 자동으로 정리
-    if (notificationHistory.length > 1) {
-      const hasDuplicates = notificationHistory.some((item, index) => 
-        notificationHistory.slice(0, index).some(other => 
-          item.title === other.title && 
-          item.body === other.body && 
-          item.type === other.type
-        )
-      );
-      
-      if (hasDuplicates) {
-        console.log('🔄 중복 알림 감지, 자동 정리 시작');
-        cleanupDuplicateNotifications();
+  const {
+    sendTestNotification,
+    cancelAllNotifications,
+    checkScheduledNotifications,
+    requestPermissions,
+  } = useLocalNotificationService();
+
+  // 알림 활성화/비활성화
+  const handleToggleEnabled = async (value: boolean) => {
+    if (value) {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          '알림 권한 필요',
+          '알림 기능을 사용하려면 알림 권한이 필요합니다. 설정에서 권한을 허용해 주세요.',
+          [{ text: '확인' }]
+        );
+        return;
       }
     }
-  }, [notificationHistory, cleanupDuplicateNotifications]);
-
-  // 새로고침
-  const onRefresh = async () => {
-    setRefreshing(true);
-    console.log('🔄 알림 히스토리 새로고침 시작');
-    // 로컬 데이터만 사용하므로 즉시 완료
-    setTimeout(() => {
-      setRefreshing(false);
-      console.log('✅ 알림 히스토리 새로고침 완료');
-    }, 500);
+    setEnabled(value);
   };
 
-  // 알림 타입에 따른 아이콘과 색상
-  const getNotificationStyle = (type: string) => {
-    switch (type) {
-      case 'EXPIRY_ALERT':
-        return { icon: '⚠️', color: '#FF6B6B', title: '유통기한 알림' };
-      case 'TEST_NOTIFICATION':
-        return { icon: '🧪', color: '#4ECDC4', title: '테스트 알림' };
-      case 'LOCAL_NOTIFICATION':
-        return { icon: '📱', color: '#45B7D1', title: '로컬 알림' };
-      default:
-        return { icon: '📢', color: '#45B7D1', title: '일반 알림' };
+  // 시간 변경
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+    
+    if (selectedTime) {
+      const timeString = selectedTime.toTimeString().slice(0, 5); // HH:mm 형식
+      setTime(timeString);
     }
   };
 
-  // 날짜 포맷팅 (정확한 시간 표시)
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffTime / (1000 * 60));
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffMinutes < 1) {
-      return '방금 전';
-    } else if (diffMinutes < 60) {
-      return `${diffMinutes}분 전`;
-    } else if (diffHours < 24) {
-      return `${diffHours}시간 전`;
-    } else if (diffDays === 1) {
-      return '어제';
-    } else if (diffDays < 7) {
-      return `${diffDays}일 전`;
-    } else {
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+  // 유통기한 임박 기준 변경
+  const handleDaysThresholdChange = (days: number) => {
+    if (days >= 1 && days <= 30) {
+      setDaysThreshold(days);
     }
   };
 
-  function getDDay(expiryDate: string) {
-    if (!expiryDate) return '';
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const diff = Math.floor((expiry.getTime() - today.setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
-    if (isNaN(diff)) return '';
-    if (diff > 0) return `D-${diff}`;
-    if (diff === 0) return 'D-day';
-    return `D+${Math.abs(diff)}`;
-  }
+  // 테스트 알림 발송
+  const handleTestNotification = async () => {
+    await sendTestNotification();
+    Alert.alert('알림 테스트', '테스트 알림이 발송되었습니다!');
+  };
 
-  // 알림 아이템 렌더링
-  const renderNotificationItem = ({ item }: { item: NotificationHistory }) => {
-    const style = getNotificationStyle(item.type);
-
-    return (
-      <View style={styles.notificationItem}>
-        <View style={styles.notificationHeader}>
-          <Text style={styles.notificationIcon}>{style.icon}</Text>
-          <View style={styles.notificationInfo}>
-            <Text style={styles.notificationTitle}>
-              {item.title}
-            </Text>
-            <Text style={styles.notificationTime}>
-              {formatDate(item.sentAt)}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.notificationBody}>
-          {item.body}
-        </Text>
-      </View>
+  // 스케줄된 알림 확인
+  const handleCheckScheduledNotifications = async () => {
+    const notifications = await checkScheduledNotifications();
+    Alert.alert(
+      '스케줄된 알림',
+      `현재 ${notifications.length}개의 알림이 스케줄되어 있습니다.\n콘솔에서 상세 정보를 확인하세요.`
     );
   };
 
-  // 빈 상태 렌더링
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyIcon}>📭</Text>
-      <Text style={styles.emptyTitle}>알림이 없습니다</Text>
-      <Text style={styles.emptySubtitle}>
-        새로운 알림이 오면 여기에 표시됩니다
-      </Text>
-    </View>
-  );
-
-  // 중복 알림 정리
-  const handleCleanupDuplicates = () => {
-    console.log('🧹 중복 알림 정리 요청됨, 현재 개수:', notificationHistory.length);
-    
+  // 모든 알림 취소
+  const handleCancelAllNotifications = () => {
     Alert.alert(
-      '중복 알림 정리',
-      '중복된 알림을 정리하시겠습니까?',
+      '알림 취소',
+      '모든 스케줄된 알림을 취소하시겠습니까?',
       [
         { text: '취소', style: 'cancel' },
         { 
-          text: '정리', 
-          onPress: () => {
-            console.log('🧹 중복 알림 정리 실행');
-            cleanupDuplicateNotifications();
-            console.log('✅ 중복 알림 정리 완료');
+          text: '확인', 
+          onPress: async () => {
+            await cancelAllNotifications();
+            Alert.alert('완료', '모든 알림이 취소되었습니다.');
           }
         },
       ]
     );
   };
 
-  // 히스토리 삭제
-  const handleClearHistory = () => {
-    console.log('🗑️ 알림 히스토리 삭제 요청됨, 현재 개수:', notificationHistory.length);
-    
-    Alert.alert(
-      '알림 히스토리 삭제',
-      '모든 알림 히스토리를 삭제하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        { 
-          text: '삭제', 
-          style: 'destructive',
-          onPress: () => {
-            console.log('🗑️ 알림 히스토리 삭제 실행');
-            clearNotificationHistory();
-            console.log('✅ 알림 히스토리 삭제 완료');
-          }
-        },
-      ]
-    );
+  // 현재 시간을 Date 객체로 변환
+  const getCurrentTimeDate = () => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  // 24시간 형식을 12시간 형식(AM/PM)으로 변환
+  const formatTimeToAmPm = (timeString: string) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const period = hours < 12 ? '오전' : '오후';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    return `${period} ${displayHour}:${displayMinutes}`;
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>알림</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.buttonTouchArea}
-            onPress={onRefresh}
-            activeOpacity={0.7}
+    <ScrollView 
+      style={[styles.container, { paddingTop: insets.top }]}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}
+    >
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>로컬 알림 설정</Text>
+        
+        {/* 알림 활성화/비활성화 */}
+        <View style={styles.row}>
+          <Text style={styles.label}>유통기한 알림</Text>
+          <Switch
+            value={enabled}
+            onValueChange={handleToggleEnabled}
+          />
+        </View>
+
+        {/* 알림 시간 설정 */}
+        <View style={styles.timeSettingContainer}>
+          <Text style={styles.label}>알림 시간</Text>
+          <TouchableOpacity
+            style={[styles.timeButton, !enabled && styles.disabledButton]}
+            onPress={() => setShowTimePicker(true)}
+            disabled={!enabled}
           >
-            <Text style={styles.refreshButton}>새로고침</Text>
+            <Text style={[styles.timeButtonText, !enabled && styles.disabledText]}>
+              {formatTimeToAmPm(time)}
+            </Text>
+            <Text style={[styles.timeButtonSubtext, !enabled && styles.disabledText]}>
+              탭하여 변경
+            </Text>
           </TouchableOpacity>
-          {notificationHistory.length > 1 && (
-            <TouchableOpacity 
-              style={styles.buttonTouchArea}
-              onPress={handleCleanupDuplicates}
-              activeOpacity={0.7}
+        </View>
+
+        {/* 유통기한 임박 기준 설정 */}
+        <View style={styles.thresholdContainer}>
+          <Text style={styles.label}>유통기한 임박 기준</Text>
+          <Text style={styles.sublabel}>유통기한이 며칠 남았을 때 알림을 받을지 설정하세요</Text>
+          
+          <View style={styles.thresholdControls}>
+            <TouchableOpacity
+              style={[styles.thresholdButton, !enabled && styles.disabledButton]}
+              onPress={() => handleDaysThresholdChange(daysThreshold - 1)}
+              disabled={!enabled || daysThreshold <= 1}
             >
-              <Text style={styles.cleanupButton}>중복정리</Text>
+              <Ionicons name="remove" size={20} color={!enabled || daysThreshold <= 1 ? '#999' : '#007AFF'} />
             </TouchableOpacity>
-          )}
-          {notificationHistory.length > 0 && (
-            <TouchableOpacity 
-              style={styles.buttonTouchArea}
-              onPress={handleClearHistory}
-              activeOpacity={0.7}
+            
+            <View style={styles.thresholdDisplay}>
+              <Text style={[styles.thresholdText, !enabled && styles.disabledText]}>
+                {daysThreshold}일
+              </Text>
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.thresholdButton, !enabled && styles.disabledButton]}
+              onPress={() => handleDaysThresholdChange(daysThreshold + 1)}
+              disabled={!enabled || daysThreshold >= 30}
             >
-              <Text style={styles.clearButton}>삭제</Text>
+              <Ionicons name="add" size={20} color={!enabled || daysThreshold >= 30 ? '#999' : '#007AFF'} />
             </TouchableOpacity>
-          )}
+          </View>
+        </View>
+
+        {/* 테스트 및 관리 버튼들 */}
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity
+            style={[styles.actionButton, !enabled && styles.disabledButton]}
+            onPress={handleTestNotification}
+            disabled={!enabled}
+          >
+            <Ionicons name="notifications-outline" size={20} color={!enabled ? '#999' : '#007AFF'} />
+            <Text style={[styles.actionButtonText, !enabled && styles.disabledText]}>
+              테스트 알림
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleCheckScheduledNotifications}
+          >
+            <Ionicons name="list-outline" size={20} color="#007AFF" />
+            <Text style={styles.actionButtonText}>
+              알림 확인
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleCancelAllNotifications}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+            <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>
+              모두 취소
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 알림 정보 */}
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoTitle}>알림 정보</Text>
+          <Text style={styles.infoText}>
+            • 설정한 시간에 매일 유통기한을 확인합니다
+          </Text>
+          <Text style={styles.infoText}>
+            • 유통기한이 임박하거나 지난 재료가 있을 때만 알림을 발송합니다
+          </Text>
+          <Text style={styles.infoText}>
+            • 유통기한이 설정되지 않은 재료는 알림에서 제외됩니다
+          </Text>
+          <Text style={styles.infoText}>
+            • 오프라인에서도 작동하는 로컬 알림입니다
+          </Text>
         </View>
       </View>
 
-      <FlatList
-        data={notificationHistory}
-        renderItem={renderNotificationItem}
-        keyExtractor={(item) => item.id.toString()}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={[
-          styles.listContainer,
-          { paddingBottom: insets.bottom + 20 }
-        ]}
-      />
-    </View>
+      {/* 시간 선택기 Modal */}
+      <Modal
+        visible={showTimePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>알림 시간 설정</Text>
+            </View>
+            
+            <View style={styles.pickerContainer}>
+              <DateTimePicker
+                value={getCurrentTimeDate()}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                onChange={handleTimeChange}
+                style={styles.timePicker}
+                themeVariant="light"
+              />
+            </View>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.confirmButtonText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
-  header: {
+  section: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+  },
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  buttonTouchArea: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refreshButton: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cleanupButton: {
-    color: '#FF9500',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  clearButton: {
-    color: '#FF3B30',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  listContainer: {
-    flexGrow: 1,
-  },
-  notificationItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fff',
-  },
-  notificationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: 12,
     marginBottom: 8,
   },
-  notificationIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  notificationInfo: {
-    flex: 1,
-  },
-  notificationTitle: {
+  label: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: '500',
     color: '#333',
   },
-  notificationTime: {
-    fontSize: 12,
-    color: '#666',
-  },
-  notificationBody: {
+  sublabel: {
     fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginLeft: 36,
+    color: '#666',
+    marginBottom: 12,
   },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
+  timeSettingContainer: {
+    marginBottom: 24,
+  },
+  timeButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 60,
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#f8f9fa',
+    marginTop: 8,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyTitle: {
+  timeButtonText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+  },
+  timeButtonSubtext: {
+    fontSize: 12,
+    color: '#666',
+  },
+  thresholdContainer: {
+    marginBottom: 24,
+  },
+  thresholdControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  thresholdButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    backgroundColor: '#f0f8ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thresholdDisplay: {
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  thresholdText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F2F2F7',
+    padding: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  disabledText: {
+    color: '#999',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  infoContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 8,
   },
-  emptySubtitle: {
+  infoText: {
     fontSize: 14,
     color: '#666',
-    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  pickerContainer: {
+    padding: 20,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timePicker: {
+    width: '100%',
+    height: Platform.OS === 'ios' ? 200 : 120,
+    backgroundColor: '#ffffff',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  cancelButton: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#ddd',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  confirmButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 }); 
