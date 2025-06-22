@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Image,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationHistory } from '@/types/api';
@@ -105,6 +107,17 @@ export default function NotificationsScreen() {
       });
     }
   };
+
+  function getDDay(expiryDate: string) {
+    if (!expiryDate) return '';
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const diff = Math.floor((expiry.getTime() - today.setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
+    if (isNaN(diff)) return '';
+    if (diff > 0) return `D-${diff}`;
+    if (diff === 0) return 'D-day';
+    return `D+${Math.abs(diff)}`;
+  }
 
   // 알림 아이템 렌더링
   const renderNotificationItem = ({ item }: { item: NotificationHistory }) => {

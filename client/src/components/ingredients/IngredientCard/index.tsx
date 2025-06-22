@@ -5,6 +5,20 @@ import { View, TouchableOpacity, PanResponder, GestureResponderEvent, Animated, 
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
+// D-day 계산 함수 추가
+function getDDay(expiryDate: string) {
+  if (!expiryDate) return '';
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0,0,0,0);
+  const diff = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (isNaN(diff)) return '';
+  if (diff > 0) return `D-${diff}`;
+  if (diff === 0) return 'D-day';
+  return `D+${Math.abs(diff)}`;
+}
+
 export const IngredientCard = ({
   ingredient,
   compact,
@@ -14,7 +28,8 @@ export const IngredientCard = ({
   onLongPress,
   onEdit,
   hideImage,
-}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'hideImage'>) => {
+  minimalView,
+}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'hideImage' | 'minimalView'>) => {
   const storageTypeLabel = {
     ROOM_TEMP: '실온',
     REFRIGERATED: '냉장',
@@ -37,19 +52,33 @@ export const IngredientCard = ({
   const isSelected = !!selected;
 
   // Container 스타일 직접 적용
-  const containerStyle = {
-    backgroundColor: isSelected && selectionMode ? '#e6f0ff' : '#fff',
-    borderRadius: 8,
-    padding: compact ? 8 : 16,
-    margin: compact ? 4 : 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    flexDirection: 'row-reverse' as const,
-    alignItems: 'center' as const,
-  };
+  const containerStyle = minimalView
+    ? {
+        backgroundColor: 'transparent',
+        borderRadius: 0,
+        padding: 0,
+        margin: 0,
+        shadowColor: 'transparent',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        elevation: 0,
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+      }
+    : {
+        backgroundColor: isSelected && selectionMode ? '#e6f0ff' : '#fff',
+        borderRadius: 8,
+        padding: compact ? 8 : 16,
+        margin: compact ? 4 : 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+      };
 
   const expiryLabel = !ingredient.expiry_date
     ? '없음'
@@ -62,8 +91,47 @@ export const IngredientCard = ({
     ? { uri: ingredient.imageUrl }
     : require('../../../../assets/images/icon.png');
 
+  if (minimalView) {
+    return (
+      <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
+        {/* 사진: 맨 왼쪽 */}
+        <Image
+          source={imageUrl}
+          style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#eee' }}
+          resizeMode="cover"
+        />
+        {/* 이름만 표시 (D-day 등 기타 정보는 표시하지 않음) */}
+        <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#333' }}>{ingredient.name}</Text>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
+      {/* 사진: 맨 왼쪽 */}
+      {!hideImage && (
+        <Image
+          source={imageUrl}
+          style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#eee' }}
+          resizeMode="cover"
+        />
+      )}
+      {/* 텍스트 정보 (이름, 수량, 유통기한만) */}
+      <View style={{ flex: 1 }}>
+        <TouchableOpacity
+          style={{ width: '100%' }}
+          activeOpacity={0.95}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : undefined}
+          onLongPress={onLongPress}
+        >
+          <Title compact={compact}>{ingredient.name}</Title>
+          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>수량: {ingredient.quantity}</InfoText>
+          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>유통기한: {expiryLabel}</InfoText>
+        </TouchableOpacity>
+      </View>
+      {/* 선택/편집 버튼 등은 기존대로 오른쪽에 유지, D-day는 연필 아이콘 왼쪽에 별도 표시 */}
       {selectionMode && (
         <View style={{
           width: 28,
@@ -79,6 +147,7 @@ export const IngredientCard = ({
           shadowOpacity: 0.10,
           shadowRadius: 2,
           elevation: 2,
+          marginLeft: 8,
         }}>
           <TouchableOpacity
             onPress={() => onSelect && onSelect(ingredient.id)}
@@ -96,49 +165,28 @@ export const IngredientCard = ({
           </TouchableOpacity>
         </View>
       )}
-      
       {!selectionMode && (
-        <TouchableOpacity
-          onPress={() => onEdit && onEdit(ingredient)}
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 8,
-            backgroundColor: '#f8f9fa',
-            marginLeft: 8,
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="pencil" size={16} color="#007AFF" />
-        </TouchableOpacity>
-      )}
-      
-      <View style={{ flex: 1, flexDirection: hideImage ? 'column' : 'row', alignItems: 'center' }}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+          {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
+          <Text style={{ marginRight: 6, color: 'black', fontWeight: 'light', fontSize: 30 }}>
+            {getDDay(ingredient.expiry_date)}
+          </Text>
           <TouchableOpacity
-            style={{ width: '100%' }}
-            activeOpacity={0.95}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : undefined}
-            onLongPress={onLongPress}
+            onPress={() => onEdit && onEdit(ingredient)}
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8,
+              backgroundColor: '#f8f9fa',
+            }}
+            activeOpacity={0.7}
           >
-            <Title compact={compact}>{ingredient.name}</Title>
-            <InfoText compact={compact}>수량: {ingredient.quantity}</InfoText>
-            <InfoText compact={compact}>보관 방법: {storageTypeLabel}</InfoText>
-            <InfoText compact={compact}>유통기한: {expiryLabel}</InfoText>
+            <Ionicons name="pencil" size={16} color="#007AFF" />
           </TouchableOpacity>
         </View>
-        {!hideImage && (
-          <Image
-            source={imageUrl}
-            style={{ width: 48, height: 48, borderRadius: 24, marginLeft: 12, backgroundColor: '#eee' }}
-            resizeMode="cover"
-          />
-        )}
-      </View>
+      )}
     </Animated.View>
   );
 };

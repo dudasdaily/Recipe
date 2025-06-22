@@ -12,7 +12,6 @@ export function ExpiryAlert({ ingredients }: ExpiryAlertProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>유통기한 임박</Text>
         <Text style={styles.subtitle}>{ingredients.length}개의 재료</Text>
       </View>
       <ScrollView
@@ -22,7 +21,7 @@ export function ExpiryAlert({ ingredients }: ExpiryAlertProps) {
       >
         {ingredients.map((ingredient) => (
           <View key={ingredient.id} style={styles.cardContainer}>
-            <IngredientCard ingredient={ingredient} compact hideImage />
+            <IngredientCard ingredient={ingredient} minimalView />
           </View>
         ))}
       </ScrollView>
@@ -41,11 +40,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#E53935',
-  },
   subtitle: {
     fontSize: 14,
     color: '#666',
@@ -54,7 +48,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   cardContainer: {
-    width: 160,
+    width: 120,
     marginHorizontal: 4,
   },
 }); 

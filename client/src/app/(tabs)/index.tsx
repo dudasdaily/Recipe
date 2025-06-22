@@ -160,7 +160,7 @@ export default function HomeScreen() {
       >
         <View style={styles.stickyHeader}>
           {/* 타이틀 */}
-          <Text style={styles.title}>MY ICE-BOX</Text>
+          <Text style={[styles.title, { fontSize: (styles.title.fontSize ?? 28) * 0.7 }]}>MY ICE-BOX</Text>
           {/* 검색창 */}
           <View style={styles.searchBarWrapper}>
             <SearchBar
@@ -181,7 +181,9 @@ export default function HomeScreen() {
                 setValue={setSelectedStorage}
                 setItems={() => {}}
                 placeholder="보관방법"
-                style={{ height: 35, minHeight: 35 }}
+                style={{ height: 35, minHeight: 35, borderColor: '#bbb' }}
+                ArrowUpIconComponent={({style}) => <Ionicons name="chevron-up" size={20} color="#888" style={style} />}
+                ArrowDownIconComponent={({style}) => <Ionicons name="chevron-down" size={20} color="#888" style={style} />}
                 zIndex={2000}
                 listMode="SCROLLVIEW"
               />
@@ -195,12 +197,15 @@ export default function HomeScreen() {
                 setValue={setSelectedCategory}
                 setItems={() => {}}
                 placeholder="카테고리"
-                style={{ height: 35, minHeight: 35 }}
+                style={{ height: 35, minHeight: 35, borderColor: '#bbb' }}
+                ArrowUpIconComponent={({style}) => <Ionicons name="chevron-up" size={20} color="#888" style={style} />}
+                ArrowDownIconComponent={({style}) => <Ionicons name="chevron-down" size={20} color="#888" style={style} />}
                 zIndex={1000}
                 listMode="SCROLLVIEW"
               />
             </View>
           </View>
+          <Text style={{ marginTop: 2, marginLeft: 16, fontSize: 14, color: '#666', textAlign: 'left' }}>{filteredIngredients.length}개의 재료</Text>
         </View>
         {/* 선택 모드 UI */}
         {isSelectionMode && (
@@ -279,12 +284,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   stickyHeader: {
     backgroundColor: '#fff',
-    paddingTop: 16,
-    paddingBottom: 4,
+    paddingTop: 8,
+    paddingBottom: 2,
     zIndex: 10,
   },
   title: {
@@ -292,18 +297,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#222',
     textAlign: 'center',
-    marginVertical: 16,
+    marginVertical: 8,
   },
   searchBarWrapper: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
   },
   rowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginTop: 12,
-    marginBottom: 4,
-    paddingHorizontal: 12,
+    marginTop: 6,
+    marginBottom: 2,
+    paddingHorizontal: 6,
     zIndex: 100,
     gap: 8,
   },
@@ -314,8 +319,8 @@ const styles = StyleSheet.create({
     height: 20,
   },
   listContent: {
-    paddingHorizontal: 12,
-    paddingTop: 4,
+    paddingHorizontal: 6,
+    paddingTop: 2,
   },
   emptyContainer: {
     flex: 1,
