@@ -159,21 +159,10 @@ export function BulkModeForm() {
           onPressReceipt={handleReceiptScan}
           onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
           onImagePicked={handleImagePicked}
+          showBulkSettings={showBulkSettings}
+          onToggleBulkSettings={() => setShowBulkSettings(!showBulkSettings)}
         />
         <View style={[styles.flexArea, { minHeight: 200 }]}>
-          <View style={styles.bulkToggleContainer}>
-            <TouchableOpacity
-              style={styles.bulkToggleButton}
-              onPress={() => setShowBulkSettings(!showBulkSettings)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.bulkToggleText}>일괄 설정</Text>
-              <Text style={[styles.bulkToggleIcon, showBulkSettings && styles.bulkToggleIconRotated]}>
-                ▼
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
           {showBulkSettings && (
             <>
               <View style={styles.bulkSettingRow}>
@@ -257,35 +246,6 @@ const styles = StyleSheet.create({
   flexArea: {
     flex: 1,
     paddingTop: 72,
-  },
-  bulkToggleContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  bulkToggleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  bulkToggleText: {
-    fontSize: 14,
-    color: '#495057',
-    fontWeight: '600',
-  },
-  bulkToggleIcon: {
-    fontSize: 14,
-    color: '#6C757D',
-    transform: [{ rotate: '0deg' }],
-  },
-  bulkToggleIconRotated: {
-    transform: [{ rotate: '180deg' }],
   },
   bulkSettingRow: {
     paddingHorizontal: 16,

@@ -1,4 +1,4 @@
-import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
@@ -7,9 +7,17 @@ type Props = {
   onPressReceipt: () => void;
   onPressCamera: () => void;
   onImagePicked?: (uri: string) => void;
+  showBulkSettings: boolean;
+  onToggleBulkSettings: () => void;
 };
 
-export function ImageRecognitionActions({ onPressReceipt, onPressCamera, onImagePicked }: Props) {
+export function ImageRecognitionActions({ 
+  onPressReceipt, 
+  onPressCamera, 
+  onImagePicked,
+  showBulkSettings,
+  onToggleBulkSettings 
+}: Props) {
   // 권한 요청 함수
   const requestCameraPermission = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -64,6 +72,16 @@ export function ImageRecognitionActions({ onPressReceipt, onPressCamera, onImage
   return (
     <View style={styles.container}>
       <TouchableOpacity
+        style={styles.bulkSettingsButton}
+        onPress={onToggleBulkSettings}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.bulkSettingsIcon, showBulkSettings && styles.bulkSettingsIconRotated]}>
+          ⚙️
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.iconButton}
         onPress={onPressReceipt}
         activeOpacity={0.7}
@@ -100,6 +118,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     zIndex: 10,
+  },
+  bulkSettingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  bulkSettingsIcon: {
+    fontSize: 20,
+  },
+  bulkSettingsIconRotated: {
+    transform: [{ rotate: '180deg' }],
   },
   iconButton: {
     width: 44,
