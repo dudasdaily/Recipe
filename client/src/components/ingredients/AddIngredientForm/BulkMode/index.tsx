@@ -12,18 +12,20 @@ import Toast from 'react-native-toast-message';
 import type { Ingredient } from '@/types/api';
 import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
 import { Swipeable } from 'react-native-gesture-handler';
-import { analyzeIngredientImage } from '@/services/api/vision';
+
 import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
 import { useReceiptStore } from '@/stores/receipt';
 import { Animated as RNAnimated } from 'react-native';
-import { ImageRecognitionActions } from '../ImageRecognitionActions';
+
 
 type BulkFormData = Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>;
 
 type BulkModeFormProps = {
   showBulkSettings?: boolean;
-  onImageFromParent?: string | null;
-  onImageProcessed?: () => void;
+  extractedIngredients?: string[];
+  onIngredientsUsed?: () => void;
+  cameraIngredients?: string[];
+  onCameraIngredientsUsed?: () => void;
 };
 
 const initialItem: BulkFormData = {
@@ -36,9 +38,11 @@ const initialItem: BulkFormData = {
 };
 
 export function BulkModeForm({ 
-  showBulkSettings = false, 
-  onImageFromParent = null,
-  onImageProcessed 
+  showBulkSettings = false,
+  extractedIngredients,
+  onIngredientsUsed,
+  cameraIngredients,
+  onCameraIngredientsUsed
 }: BulkModeFormProps) {
   const [items, setItems] = useState<(BulkFormData & { _key?: string })[]>([{ ...initialItem, _key: String(Date.now()) }]);
   const [bulkCategory, setBulkCategory] = useState('');
@@ -69,6 +73,68 @@ export function BulkModeForm({
       }).start();
     }
   }, [showBulkSettings, slideAnim]);
+
+  // 영수증에서 추출된 재료들을 처리하는 useEffect
+  useEffect(() => {
+    console.log('BulkModeForm - extractedIngredients 변경:', extractedIngredients);
+    if (extractedIngredients && extractedIngredients.length > 0) {
+      const newItems = extractedIngredients.map((name) => ({
+        ...initialItem,
+        name,
+        _key: String(Date.now() + Math.random()),
+      }));
+      
+      console.log('BulkModeForm - 새 아이템들 생성:', newItems);
+      
+      // 기존 빈 아이템 제거하고 새 아이템들 추가
+      setItems(prev => {
+        const nonEmptyItems = prev.filter(item => item.name.trim());
+        const result = [...nonEmptyItems, ...newItems];
+        console.log('BulkModeForm - 최종 아이템들:', result);
+        return result;
+      });
+      
+      // 사용 완료 콜백 호출
+      onIngredientsUsed?.();
+      
+      Toast.show({
+        type: 'success',
+        text1: '영수증 재료 추가',
+        text2: `${extractedIngredients.length}개의 재료가 추가되었습니다.`,
+      });
+    }
+  }, [extractedIngredients, onIngredientsUsed]);
+
+  // 카메라에서 인식된 재료들을 처리하는 useEffect
+  useEffect(() => {
+    console.log('BulkModeForm - cameraIngredients 변경:', cameraIngredients);
+    if (cameraIngredients && cameraIngredients.length > 0) {
+      const newItems = cameraIngredients.map((name) => ({
+        ...initialItem,
+        name,
+        _key: String(Date.now() + Math.random()),
+      }));
+      
+      console.log('BulkModeForm - 카메라 새 아이템들 생성:', newItems);
+      
+      // 기존 빈 아이템 제거하고 새 아이템들 추가
+      setItems(prev => {
+        const nonEmptyItems = prev.filter(item => item.name.trim());
+        const result = [...nonEmptyItems, ...newItems];
+        console.log('BulkModeForm - 카메라 최종 아이템들:', result);
+        return result;
+      });
+      
+      // 사용 완료 콜백 호출
+      onCameraIngredientsUsed?.();
+      
+      Toast.show({
+        type: 'success',
+        text1: '카메라 재료 추가',
+        text2: `${cameraIngredients.length}개의 재료가 추가되었습니다.`,
+      });
+    }
+  }, [cameraIngredients, onCameraIngredientsUsed]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: BulkFormData[]) =>
@@ -137,21 +203,7 @@ export function BulkModeForm({
     mutate(validItems);
   };
 
-  const handleImagePicked = async (uri: string) => {
-    try {
-      const result = await analyzeIngredientImage(uri);
-      if (!result.success || !result.data.ingredients || result.data.ingredients.length === 0) {
-        Toast.show({ type: 'error', text1: '식재료 인식 실패', text2: result.message || '식재료를 찾을 수 없습니다.' });
-        return;
-      }
-      const names = result.data.ingredients.map((item: any) => item.name);
-      if (names.length > 0) {
-        setItems(names.map((name: string) => ({ ...initialItem, name })));
-      }
-    } catch (e: any) {
-      Toast.show({ type: 'error', text1: '이미지 분석 오류', text2: e.message });
-    }
-  };
+
 
   // 영수증 스캔 시작
   const handleReceiptScan = () => {
@@ -203,13 +255,7 @@ export function BulkModeForm({
     }
   }, [items.length]);
 
-  // 상위 컴포넌트에서 전달받은 이미지 처리
-  useEffect(() => {
-    if (onImageFromParent) {
-      handleImagePicked(onImageFromParent);
-      onImageProcessed?.(); // 처리 완료 알림
-    }
-  }, [onImageFromParent]);
+
 
   return (
     <>
@@ -327,23 +373,7 @@ export function BulkModeForm({
           </View>
         </View>
 
-        {/* 플로팅 액션 버튼들 */}
-        <ImageRecognitionActions
-          onPressReceipt={handleReceiptScan}
-          onPressCamera={() => {
-            // 카메라 버튼은 ImageRecognitionActions 내부에서 처리
-          }}
-          onImagePicked={handleImagePicked}
-          showBulkSettings={showBulkSettings || false}
-          onToggleBulkSettings={() => {
-            // 일괄설정은 상위 컴포넌트에서 관리하므로 안내 메시지만 표시
-            Toast.show({
-              type: 'info',
-              text1: '일괄모드 설정',
-              text2: '상단의 일괄모드 버튼을 사용해주세요.',
-            });
-          }}
-        />
+
       </KeyboardAvoidingView>
 
       {/* 영수증 스캔 플로우 */}

@@ -6,11 +6,21 @@ import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
+import { analyzeIngredientImage } from '@/services/api/vision';
 
 export default function AddScreen() {
   const [showBulkSettings, setShowBulkSettings] = useState(false);
   const [showReceiptFlow, setShowReceiptFlow] = useState(false);
-  const [imageUriForProcessing, setImageUriForProcessing] = useState<string | null>(null);
+  const [extractedIngredients, setExtractedIngredients] = useState<string[]>([]);
+  const [cameraIngredients, setCameraIngredients] = useState<string[]>([]);
+
+
+
+
+  // 영수증 버튼 핸들러
+  const handleReceiptPress = () => {
+    setShowReceiptFlow(true);
+  };
 
   // 권한 요청 함수들
   const requestCameraPermission = async () => {
@@ -44,7 +54,7 @@ export default function AddScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUriForProcessing(result.assets[0].uri);
+        await processImage(result.assets[0].uri);
       }
     } catch (e: any) {
       Toast.show({ 
@@ -68,7 +78,7 @@ export default function AddScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUriForProcessing(result.assets[0].uri);
+        await processImage(result.assets[0].uri);
       }
     } catch (e: any) {
       Toast.show({ 
@@ -79,16 +89,48 @@ export default function AddScreen() {
     }
   };
 
-  // 영수증 버튼 핸들러
-  const handleReceiptPress = () => {
-    setShowReceiptFlow(true);
+  // 이미지 분석 처리
+  const processImage = async (imageUri: string) => {
+    try {
+      Toast.show({
+        type: 'info',
+        text1: '이미지 분석 중',
+        text2: '식재료를 인식하고 있습니다...',
+      });
+
+      const result = await analyzeIngredientImage(imageUri);
+      
+      if (result.success && result.data.ingredients && result.data.ingredients.length > 0) {
+        const ingredientNames = result.data.ingredients.map((item: any) => item.name);
+        setCameraIngredients(ingredientNames);
+        
+        Toast.show({
+          type: 'success',
+          text1: '이미지 분석 완료',
+          text2: `${ingredientNames.length}개의 식재료가 인식되었습니다.`,
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: '식재료 인식 실패',
+          text2: result.message || '식재료를 찾을 수 없습니다.',
+        });
+      }
+    } catch (error: any) {
+      console.error('이미지 분석 오류:', error);
+      Toast.show({
+        type: 'error',
+        text1: '이미지 분석 오류',
+        text2: error.message || '이미지 분석 중 오류가 발생했습니다.',
+      });
+    }
   };
 
-  // 카메라 버튼 핸들러 - 실제 기능 연결
+  // 카메라 버튼 핸들러
   const handleCameraPress = () => {
     Alert.alert(
       '사진 선택',
-      '카메라로 촬영하시겠습니까? 취소를 누르면 갤러리에서 선택합니다.',
+      '카메라로 촬영하시거나 갤러리에서 선택하세요.',
       [
         { text: '카메라', onPress: takePhoto },
         { text: '갤러리', onPress: pickImage },
@@ -97,24 +139,36 @@ export default function AddScreen() {
     );
   };
 
-  // 이미지 처리 완료 핸들러
-  const handleImageProcessed = () => {
-    setImageUriForProcessing(null); // 처리 완료 후 state 초기화
+  // 영수증에서 재료가 추출되었을 때 처리
+  const handleIngredientsExtracted = (ingredients: string[]) => {
+    console.log('AddScreen - 재료 추출됨:', ingredients);
+    setExtractedIngredients(ingredients);
+    setShowReceiptFlow(false);
+    Toast.show({
+      type: 'success',
+      text1: '영수증 처리 완료',
+      text2: `${ingredients.length}개의 재료가 인식되었습니다.`,
+    });
   };
 
   // 영수증 플로우 완료 처리
   const handleReceiptComplete = () => {
     setShowReceiptFlow(false);
-    Toast.show({
-      type: 'success',
-      text1: '영수증 처리 완료',
-      text2: '영수증에서 인식된 재료들이 추가되었습니다.',
-    });
   };
 
   // 영수증 플로우 취소 처리
   const handleReceiptCancel = () => {
     setShowReceiptFlow(false);
+  };
+
+  // 추출된 재료 사용 완료 처리 (영수증)
+  const handleIngredientsUsed = () => {
+    setExtractedIngredients([]);
+  };
+
+  // 카메라 재료 사용 완료 처리
+  const handleCameraIngredientsUsed = () => {
+    setCameraIngredients([]);
   };
 
   return (
@@ -160,8 +214,10 @@ export default function AddScreen() {
       
       <AddIngredientForm 
         showBulkSettings={showBulkSettings}
-        onImageFromParent={imageUriForProcessing}
-        onImageProcessed={handleImageProcessed}
+        extractedIngredients={extractedIngredients}
+        onIngredientsUsed={handleIngredientsUsed}
+        cameraIngredients={cameraIngredients}
+        onCameraIngredientsUsed={handleCameraIngredientsUsed}
       />
 
       {/* 영수증 스캔 플로우 */}
@@ -169,6 +225,7 @@ export default function AddScreen() {
         visible={showReceiptFlow}
         onClose={handleReceiptCancel}
         onComplete={handleReceiptComplete}
+        onIngredientsExtracted={handleIngredientsExtracted}
       />
     </SafeAreaView>
   );

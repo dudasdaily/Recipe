@@ -10,16 +10,19 @@ type ReceiptFlowProps = {
   visible: boolean;
   onClose: () => void;
   onComplete?: () => void;
+  onIngredientsExtracted?: (ingredients: string[]) => void;
 };
 
 export const ReceiptFlow = ({ 
   visible, 
   onClose, 
-  onComplete 
+  onComplete,
+  onIngredientsExtracted 
 }: ReceiptFlowProps) => {
   const { 
     currentStep, 
     processedReceipt,
+    recognizedItems,
     isTransitionModalVisible,
     transitionMessage,
     hideTransitionModal,
@@ -28,10 +31,22 @@ export const ReceiptFlow = ({
   
   const { enableTabBar } = useNavigationStore();
 
-  // 스캔 완료 처리
+  // 스캔 완료 처리 - 바로 재료명 추출하여 콜백 호출
   const handleScanComplete = () => {
-    // 영수증 처리 완료 시 결과 화면으로 이동
     console.log('영수증 스캔 완료:', processedReceipt);
+    
+    // 재료명만 추출하여 상위 컴포넌트로 전달
+    if (recognizedItems && recognizedItems.length > 0) {
+      const ingredientNames = recognizedItems.map((item: any) => item.name);
+      console.log('추출된 재료명:', ingredientNames);
+      onIngredientsExtracted?.(ingredientNames);
+    }
+    
+    // ReceiptResult 화면으로 이동하지 않고 바로 완료 처리
+    resetState();
+    enableTabBar();
+    onComplete?.();
+    onClose();
   };
 
   // 저장 완료 처리
@@ -69,20 +84,14 @@ export const ReceiptFlow = ({
       onRequestClose={handleCancel}
     >
       <View style={styles.container}>
-        {/* 단계별 화면 렌더링 */}
+        {/* 단계별 화면 렌더링 - SCAN 단계만 사용 */}
         {currentStep === 'SCAN' && (
           <ReceiptScanner
             onScanComplete={handleScanComplete}
             onError={(error) => {
               console.error('스캔 에러:', error);
+              handleCancel();
             }}
-          />
-        )}
-        
-        {(currentStep === 'REVIEW' || currentStep === 'EDIT' || currentStep === 'SAVE') && (
-          <ReceiptResult
-            onSaveComplete={handleSaveComplete}
-            onCancel={handleCancel}
           />
         )}
 
