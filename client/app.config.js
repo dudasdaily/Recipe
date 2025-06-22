@@ -77,12 +77,12 @@ try {
 
 export default {
   expo: {
-    name: "Recipe",
-    slug: "recipe",
+    name: "Kooky",
+    slug: "kooky",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "recipe",
+    scheme: "kooky",
     userInterfaceStyle: "light",
     splash: {
       image: "./assets/images/splash.png",
