@@ -49,7 +49,8 @@ const styles = StyleSheet.create({
     paddingLeft: 30,
   },
   cardContainer: {
-    width: 70,
+    width: 60,
     marginHorizontal: 2,
+    height: 25,
   },
 }); 

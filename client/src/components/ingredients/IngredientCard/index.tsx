@@ -92,10 +92,22 @@ export const IngredientCard = ({
     : require('../../../../assets/images/paprika.png');
 
   if (minimalView) {
+    // 유통기한 D-day에 따라 배경색 결정
+    let bgColor = '#fff';
+    if (ingredient.expiry_date) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const expiry = new Date(ingredient.expiry_date);
+      expiry.setHours(0,0,0,0);
+      const diff = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff === 1) bgColor = '#FF6B6B'; // 빨간색
+      else if (diff === 2 || diff === 3) bgColor = '#FFD600'; // 노란색
+      else if (diff >= 4 && diff <= 7) bgColor = '#B2FF59'; // 연두색
+    }
     return (
-      <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
+      <Animated.View style={[containerStyle, { backgroundColor: bgColor, alignItems: 'center', justifyContent: 'center', height: '100%', transform: [{ scale }] }]}> 
         {/* 이름만 표시 (사진, D-day 등 기타 정보는 표시하지 않음) */}
-        <Text style={{ fontWeight: 'bold', fontSize: 13, color: '#333' }}>{ingredient.name}</Text>
+        <Text style={{ fontWeight: 'bold', fontSize: 13, color: '#333', textAlign: 'center' }}>{ingredient.name}</Text>
       </Animated.View>
     );
   }
