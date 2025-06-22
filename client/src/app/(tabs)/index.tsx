@@ -68,7 +68,9 @@ export default function HomeScreen() {
     const threshold = new Date();
     threshold.setDate(now.getDate() + EXPIRY_THRESHOLD_DAYS);
     return ingredients.filter(ingredient => {
+      if (!ingredient.expiry_date) return false;
       const expiryDate = new Date(ingredient.expiry_date);
+      // 유통기한이 threshold(오늘+7일) 이내이거나 이미 지난 재료 모두 포함
       return expiryDate <= threshold;
     }).sort((a, b) => 
       new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
@@ -203,7 +205,7 @@ export default function HomeScreen() {
               />
             </View>
           </View>
-          <Text style={{ marginTop: 2, marginLeft: 16, fontSize: 14, color: '#666', textAlign: 'left' }}>{filteredIngredients.length}개의 재료</Text>
+          <Text style={{ marginTop: 2, marginLeft: 25, fontSize: 14, color: '#666', textAlign: 'left' }}>등록한 재료 {filteredIngredients.length}개</Text>
         </View>
         {/* 선택 모드 UI */}
         {isSelectionMode && (
@@ -307,6 +309,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 2,
     paddingHorizontal: 6,
+    marginRight: 25,
     zIndex: 100,
     gap: 8,
   },

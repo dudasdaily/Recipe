@@ -92,10 +92,23 @@ export const IngredientCard = ({
     : require('../../../../assets/images/paprika.png');
 
   if (minimalView) {
+    // 유통기한 D-day에 따라 배경색 결정
+    let bgColor = '#fff';
+    if (ingredient.expiry_date) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const expiry = new Date(ingredient.expiry_date);
+      expiry.setHours(0,0,0,0);
+      const diff = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if(diff < 0) bgColor = '#ff5b5b';
+      else if (diff === 0 || diff === 1) bgColor = '#ff9d5b'; // 빨간색 #ffd0cc
+      else if (diff === 2 || diff === 3) bgColor = '#ffce5b'; // 노란색
+      else if (diff >= 4 && diff <= 7) bgColor = '#ffce5b'; // 연두색
+    }
     return (
-      <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
+      <Animated.View style={[containerStyle, { backgroundColor: bgColor, alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 12, transform: [{ scale }] }]}> 
         {/* 이름만 표시 (사진, D-day 등 기타 정보는 표시하지 않음) */}
-        <Text style={{ fontWeight: 'bold', fontSize: 13, color: '#333' }}>{ingredient.name}</Text>
+        <Text style={{ fontWeight: 'bold', fontSize: 13, color: 'white', textAlign: 'center' }}>{ingredient.name}</Text>
       </Animated.View>
     );
   }
@@ -106,7 +119,7 @@ export const IngredientCard = ({
       {!hideImage && (
         <Image
           source={imageUrl}
-          style={{ width: 64, height: 64, borderRadius: 32, marginRight: 12, backgroundColor: '#eee' }}
+          style={{ width: 64, height: 64, borderRadius: 32, marginRight: 15, backgroundColor: '#eee' }}
           resizeMode="cover"
         />
       )}
@@ -120,9 +133,9 @@ export const IngredientCard = ({
           onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : undefined}
           onLongPress={onLongPress}
         >
-          <Title compact={compact}>{ingredient.name}</Title>
+          <Title compact={compact} style={{ fontSize: compact ? 16 : 16 }}>{ingredient.name}</Title>
           <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>수량: {ingredient.quantity}</InfoText>
-          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>유통기한: {expiryLabel}</InfoText>
+          <InfoText compact={compact} style={{ fontSize: compact ? 9.6 : 11.2 }}>{expiryLabel}</InfoText>
         </TouchableOpacity>
       </View>
       {/* 선택/편집 버튼 등은 기존대로 오른쪽에 유지, D-day는 연필 아이콘 왼쪽에 별도 표시 */}
@@ -162,7 +175,7 @@ export const IngredientCard = ({
       {!selectionMode && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
           {/* D-day 강조 표시: 연필 아이콘 왼쪽 */}
-          <Text style={{ marginRight: 6, color: 'black', fontWeight: 'light', fontSize: 30 }}>
+          <Text style={{ marginRight: 10, color: 'black', fontWeight: 'light', fontSize: 23}}>
             {getDDay(ingredient.expiry_date)}
           </Text>
           <TouchableOpacity
@@ -177,7 +190,7 @@ export const IngredientCard = ({
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name="pencil" size={16} color="#007AFF" />
+            <Ionicons name="pencil" size={16} color="#000" />
           </TouchableOpacity>
         </View>
       )}

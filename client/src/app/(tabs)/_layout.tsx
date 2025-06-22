@@ -31,12 +31,19 @@ export default function TabLayout() {
           display: isTabBarEnabled ? 'flex' : 'none',
           backgroundColor: '#ffffff', // 배경색 명시
         },
+        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: 0,
+          paddingBottom: 0,
+        },
+        tabBarActiveTintColor: '#000',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: '홈',
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="home" color={color} />
           ),
@@ -45,7 +52,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="add"
         options={{
-          title: '추가',
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="plus-circle" color={color} />
           ),
@@ -54,7 +60,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: '알림',
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="bell" color={color} />
           ),
@@ -63,7 +68,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: '설정',
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="settings" color={color} />
           ),
