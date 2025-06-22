@@ -129,6 +129,11 @@ export default function HomeScreen() {
     refetch();
   };
 
+  // 스와이프 삭제 핸들러
+  const handleDeleteIngredient = (id: number) => {
+    deleteMutate(id);
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -252,6 +257,7 @@ export default function HomeScreen() {
                 onSelect={() => handleSelect(item.id)}
                 onLongPress={() => handleLongPress(item.id)}
                 onEdit={handleEdit}
+                onDelete={isSelectionMode ? undefined : handleDeleteIngredient}
               />
             )}
             keyExtractor={item => String(item.id)}
