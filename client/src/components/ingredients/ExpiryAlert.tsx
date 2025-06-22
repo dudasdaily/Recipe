@@ -22,7 +22,7 @@ export function ExpiryAlert({ ingredients }: ExpiryAlertProps) {
       >
         {ingredients.map((ingredient) => (
           <View key={ingredient.id} style={styles.cardContainer}>
-            <IngredientCard ingredient={ingredient} compact />
+            <IngredientCard ingredient={ingredient} compact hideImage />
           </View>
         ))}
       </ScrollView>

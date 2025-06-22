@@ -23,7 +23,10 @@ export const getIngredient = async (id: number): Promise<Ingredient> => {
 
 // 재료 수정
 export const updateIngredient = async (id: number, ingredient: Omit<Ingredient, 'id' | 'created_at' | 'updated_at'>): Promise<Ingredient> => {
+  // 요청 정보 로그
+  console.log('[재료 수정 요청] URL:', `/ingredients/${id}`, 'payload:', ingredient);
   const res = await apiClient.put(`/ingredients/${id}`, ingredient);
+  console.log('[재료 수정 성공] response:', res.data);
   return res.data;
 };
 

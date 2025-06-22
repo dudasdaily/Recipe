@@ -105,7 +105,17 @@ export default function HomeScreen() {
   };
 
   const handleEdit = (ingredient: Ingredient) => {
-    setEditingIngredient(ingredient);
+    // 현재 ingredients 리스트에서 해당 재료가 여전히 존재하는지 확인
+    const existingIngredient = ingredients.find(item => item.id === ingredient.id);
+    
+    if (!existingIngredient) {
+      alert('해당 재료를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.\n목록을 새로고침합니다.');
+      refetch(); // 데이터 새로고침
+      return;
+    }
+    
+    // 최신 데이터로 수정 폼 열기
+    setEditingIngredient(existingIngredient);
   };
 
   const handleCloseEdit = () => {

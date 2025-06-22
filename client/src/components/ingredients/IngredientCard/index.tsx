@@ -13,7 +13,8 @@ export const IngredientCard = ({
   onSelect,
   onLongPress,
   onEdit,
-}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit'>) => {
+  hideImage,
+}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'hideImage'>) => {
   const storageTypeLabel = {
     ROOM_TEMP: '실온',
     REFRIGERATED: '냉장',
@@ -114,7 +115,7 @@ export const IngredientCard = ({
         </TouchableOpacity>
       )}
       
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ flex: 1, flexDirection: hideImage ? 'column' : 'row', alignItems: 'center' }}>
         <View style={{ flex: 1 }}>
           <TouchableOpacity
             style={{ width: '100%' }}
@@ -130,11 +131,13 @@ export const IngredientCard = ({
             <InfoText compact={compact}>유통기한: {expiryLabel}</InfoText>
           </TouchableOpacity>
         </View>
-        <Image
-          source={imageUrl}
-          style={{ width: 48, height: 48, borderRadius: 24, marginLeft: 12, backgroundColor: '#eee' }}
-          resizeMode="cover"
-        />
+        {!hideImage && (
+          <Image
+            source={imageUrl}
+            style={{ width: 48, height: 48, borderRadius: 24, marginLeft: 12, backgroundColor: '#eee' }}
+            resizeMode="cover"
+          />
+        )}
       </View>
     </Animated.View>
   );

@@ -10,4 +10,5 @@ export type IngredientCardProps = {
   onLongPress?: () => void;
   onPress?: () => void;
   onDragSelect?: (id: number) => void;
+  hideImage?: boolean;
 }; 
