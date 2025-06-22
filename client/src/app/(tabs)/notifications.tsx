@@ -100,7 +100,7 @@ export default function NotificationsScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>로컬 알림 설정</Text>
+        <Text style={styles.sectionTitle}>알림 설정</Text>
         
         {/* 알림 활성화/비활성화 */}
         <View style={styles.row}>
@@ -108,6 +108,7 @@ export default function NotificationsScreen() {
           <Switch
             value={enabled}
             onValueChange={handleToggleEnabled}
+            trackColor={{ false: '#ccc', true: '#4CAF50' }}
           />
         </View>
 
@@ -122,16 +123,13 @@ export default function NotificationsScreen() {
             <Text style={[styles.timeButtonText, !enabled && styles.disabledText]}>
               {formatTimeToAmPm(time)}
             </Text>
-            <Text style={[styles.timeButtonSubtext, !enabled && styles.disabledText]}>
-              탭하여 변경
-            </Text>
           </TouchableOpacity>
         </View>
 
         {/* 유통기한 임박 기준 설정 */}
         <View style={styles.thresholdContainer}>
           <Text style={styles.label}>유통기한 임박 기준</Text>
-          <Text style={styles.sublabel}>유통기한이 며칠 남았을 때 알림을 받을지 설정하세요</Text>
+          <Text style={styles.sublabel}>알림 받을 기준 일수를 선택하세요</Text>
           
           <View style={styles.thresholdControls}>
             <TouchableOpacity
@@ -139,7 +137,7 @@ export default function NotificationsScreen() {
               onPress={() => handleDaysThresholdChange(daysThreshold - 1)}
               disabled={!enabled || daysThreshold <= 1}
             >
-              <Ionicons name="remove" size={20} color={!enabled || daysThreshold <= 1 ? '#999' : '#666'} />
+              <Text style={[styles.thresholdButtonText, !enabled || daysThreshold <= 1 ? styles.disabledText : null]}>-</Text>
             </TouchableOpacity>
             
             <View style={styles.thresholdDisplay}>
@@ -153,7 +151,7 @@ export default function NotificationsScreen() {
               onPress={() => handleDaysThresholdChange(daysThreshold + 1)}
               disabled={!enabled || daysThreshold >= 30}
             >
-              <Ionicons name="add" size={20} color={!enabled || daysThreshold >= 30 ? '#999' : '#666'} />
+              <Text style={[styles.thresholdButtonText, !enabled || daysThreshold >= 30 ? styles.disabledText : null]}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -164,7 +162,7 @@ export default function NotificationsScreen() {
           onPress={handleTestNotification}
           disabled={!enabled}
         >
-          <Ionicons name="notifications-outline" size={20} color={!enabled ? '#999' : '#007AFF'} />
+          <Ionicons name="notifications-outline" size={20} color={!enabled ? '#999' : '#fff'} />
           <Text style={[styles.testButtonText, !enabled && styles.disabledText]}>
             테스트 알림 보내기
           </Text>
@@ -247,6 +245,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 20,
+    textAlign: 'center',
   },
   row: {
     flexDirection: 'row',
@@ -257,8 +256,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    color: '#222',
+    fontWeight: 'bold',
+    marginBottom: 4,
+    marginLeft: 2,
   },
   sublabel: {
     fontSize: 14,
@@ -269,24 +270,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   timeButton: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#ddd',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f0f0f0',
     marginTop: 8,
   },
   timeButtonText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-  },
-  timeButtonSubtext: {
-    fontSize: 12,
-    color: '#666',
+    textAlign: 'center',
   },
   thresholdContainer: {
     marginBottom: 24,
@@ -298,23 +296,34 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   thresholdButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#999',
-    backgroundColor: '#f5f5f5',
+    minWidth: 44,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  thresholdButtonText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
   },
   thresholdDisplay: {
     minWidth: 80,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 40,
+    width: 56,
+    height: 56,
+    alignSelf: 'center',
   },
   thresholdText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+    textAlign: 'center',
   },
   testButton: {
     flexDirection: 'row',
@@ -323,15 +332,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
+    borderColor: '#2196F3',
+    backgroundColor: '#2196F3',
     marginBottom: 24,
     gap: 8,
   },
   testButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#fff',
   },
   disabledText: {
     color: '#999',

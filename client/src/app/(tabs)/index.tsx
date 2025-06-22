@@ -257,7 +257,7 @@ export default function HomeScreen() {
       >
         <View style={styles.stickyHeader}>
           {/* 타이틀 */}
-          <Text style={[styles.title, { fontSize: (styles.title.fontSize ?? 28) * 0.7 }]}>MY ICE-BOX</Text>
+          <Text style={[styles.title, { fontSize: (styles.title.fontSize ?? 28) * 0.7 }]}>식재료 보관함</Text>
           {/* 검색창 */}
           <View style={styles.searchBarWrapper}>
             <SearchBar

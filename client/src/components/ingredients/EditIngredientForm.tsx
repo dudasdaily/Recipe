@@ -140,13 +140,15 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
           title="저장"
           onPress={handleSave}
           loading={isUpdating}
-          style={styles.saveBtn}
+          style={Object.assign({}, styles.saveBtn, { backgroundColor: '#bdbdbd' })}
+          textStyle={{ color: '#fff' }}
         />
         <Button
           title="닫기"
           onPress={onClose}
           variant="secondary"
-          style={styles.closeBtn}
+          style={Object.assign({}, styles.closeBtn, { borderColor: '#666', backgroundColor: '#fff' })}
+          textStyle={{ color: '#666' }}
         />
       </View>
     </View>
