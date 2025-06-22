@@ -4,6 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useIngredients, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { IngredientCard } from '@/components/ingredients/IngredientCard';
 import { SearchBar } from '@/components/ingredients/SearchBar';
+import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
 import { EditIngredientForm } from '@/components/ingredients/EditIngredientForm';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +63,18 @@ export default function HomeScreen() {
       return matchName && matchStorage && matchCategory;
     }).sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
   }, [ingredients, searchQuery, selectedStorage, selectedCategory]);
+
+  const expiringIngredients = useMemo(() => {
+    const now = new Date();
+    const threshold = new Date();
+    threshold.setDate(now.getDate() + EXPIRY_THRESHOLD_DAYS);
+    return ingredients.filter(ingredient => {
+      const expiryDate = new Date(ingredient.expiry_date);
+      return expiryDate <= threshold;
+    }).sort((a, b) => 
+      new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+    );
+  }, [ingredients]);
 
   const handleSelect = (id: number) => {
     setSelectedIds(prev =>
@@ -145,6 +158,8 @@ export default function HomeScreen() {
               onChangeText={setSearchQuery}
             />
           </View>
+          <View style={{ height: 8 }} />
+          <ExpiryAlert ingredients={expiringIngredients} />
           {/* 보관방법/카테고리 드롭다운 한 줄 */}
           <View style={styles.rowContainer}>
             <View style={styles.selectBox}>

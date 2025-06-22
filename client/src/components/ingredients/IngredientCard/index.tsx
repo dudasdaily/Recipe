@@ -46,7 +46,7 @@ export const IngredientCard = ({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
-    flexDirection: 'row' as const,
+    flexDirection: 'row-reverse' as const,
     alignItems: 'center' as const,
   };
 
@@ -63,11 +63,6 @@ export const IngredientCard = ({
 
   return (
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}> 
-      <Image
-        source={imageUrl}
-        style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#eee' }}
-        resizeMode="cover"
-      />
       {selectionMode && (
         <View style={{
           width: 28,
@@ -100,6 +95,7 @@ export const IngredientCard = ({
           </TouchableOpacity>
         </View>
       )}
+      
       {!selectionMode && (
         <TouchableOpacity
           onPress={() => onEdit && onEdit(ingredient)}
@@ -117,20 +113,28 @@ export const IngredientCard = ({
           <Ionicons name="pencil" size={16} color="#007AFF" />
         </TouchableOpacity>
       )}
-      <View style={{ flex: 1 }}>
-        <TouchableOpacity
-          style={{ width: '100%' }}
-          activeOpacity={0.95}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : undefined}
-          onLongPress={onLongPress}
-        >
-          <Title compact={compact}>{ingredient.name}</Title>
-          <InfoText compact={compact}>수량: {ingredient.quantity}</InfoText>
-          <InfoText compact={compact}>보관 방법: {storageTypeLabel}</InfoText>
-          <InfoText compact={compact}>유통기한: {expiryLabel}</InfoText>
-        </TouchableOpacity>
+      
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flex: 1 }}>
+          <TouchableOpacity
+            style={{ width: '100%' }}
+            activeOpacity={0.95}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onPress={selectionMode ? (() => onSelect && onSelect(ingredient.id)) : undefined}
+            onLongPress={onLongPress}
+          >
+            <Title compact={compact}>{ingredient.name}</Title>
+            <InfoText compact={compact}>수량: {ingredient.quantity}</InfoText>
+            <InfoText compact={compact}>보관 방법: {storageTypeLabel}</InfoText>
+            <InfoText compact={compact}>유통기한: {expiryLabel}</InfoText>
+          </TouchableOpacity>
+        </View>
+        <Image
+          source={imageUrl}
+          style={{ width: 48, height: 48, borderRadius: 24, marginLeft: 12, backgroundColor: '#eee' }}
+          resizeMode="cover"
+        />
       </View>
     </Animated.View>
   );
