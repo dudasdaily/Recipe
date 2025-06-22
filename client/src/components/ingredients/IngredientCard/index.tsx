@@ -50,6 +50,7 @@ export const IngredientCard = ({
   const deleteOpacity = useRef(new Animated.Value(0)).current;
   const [isSwipeDeleteVisible, setIsSwipeDeleteVisible] = useState(false);
   const SWIPE_THRESHOLD = 80; // 스와이프 임계값
+  const startTranslateX = useRef(0); // 제스처 시작 시점의 translateX 값
 
   const handlePressIn = () => {
     setPressed(true);
@@ -87,31 +88,41 @@ export const IngredientCard = ({
     },
     onPanResponderTerminationRequest: () => false, // 다른 컴포넌트가 제스처를 가져가는 것을 방지
     onPanResponderGrant: () => {
-      // 간단하게 현재 애니메이션 값으로 시작
-      translateX.stopAnimation();
+      // 현재 애니메이션 값을 정지하고 시작점 저장
+      translateX.stopAnimation((value) => {
+        startTranslateX.current = value;
+      });
       deleteOpacity.stopAnimation();
       // 스와이프 시작 시 부모 스크롤 비활성화
       onScrollToggle?.(false);
     },
     onPanResponderMove: (evt, gestureState) => {
+      // 현재 위치 = 시작점 + 제스처 변화량
+      const currentPosition = startTranslateX.current + gestureState.dx;
+      
       // 왼쪽으로 스와이프할 때만 이동 허용 (오른쪽 스와이프는 삭제창이 열려있을 때만)
       if (gestureState.dx < 0 || (gestureState.dx > 0 && isSwipeDeleteVisible)) {
-        // 오른쪽 스와이프는 0을 넘지 않도록 제한
-        const newX = gestureState.dx < 0 ? Math.max(gestureState.dx, -80) : Math.min(gestureState.dx, 0);
+        // 이동 범위 제한: -80 ~ 0
+        const newX = Math.max(Math.min(currentPosition, 0), -80);
         
         // 부드러운 애니메이션으로 따라오도록 설정
         translateX.setValue(newX);
         
-        // 삭제 버튼 투명도 조절 (왼쪽 스와이프 시에만)
-        if (gestureState.dx < 0) {
-          const opacity = Math.min(Math.abs(gestureState.dx) / 80, 1);
-          deleteOpacity.setValue(opacity);
-        }
+        // 삭제 버튼 투명도 조절 (-80 위치에서 1, 0 위치에서 0)
+        const opacity = Math.min(Math.abs(newX) / 80, 1);
+        deleteOpacity.setValue(opacity);
       }
     },
     onPanResponderRelease: (evt, gestureState) => {
-      if (gestureState.dx < -SWIPE_THRESHOLD) {
-        // 임계값을 넘으면 삭제 버튼 고정 표시
+      // 최종 위치 계산
+      const finalPosition = startTranslateX.current + gestureState.dx;
+      const clampedPosition = Math.max(Math.min(finalPosition, 0), -80);
+      
+      // 삭제 버튼을 완전히 보여줄지 결정 (-40 이상 스와이프했거나, 이미 열려있는 상태에서 닫기 임계값을 넘지 않았을 때)
+      const shouldShowDeleteButton = clampedPosition <= -40 || (isSwipeDeleteVisible && clampedPosition > -40 && gestureState.dx < SWIPE_THRESHOLD);
+      
+      if (shouldShowDeleteButton) {
+        // 삭제 버튼 고정 표시
         setIsSwipeDeleteVisible(true);
         Animated.parallel([
           Animated.timing(translateX, {
@@ -128,26 +139,8 @@ export const IngredientCard = ({
           // 애니메이션 완료 후 스크롤 활성화 (삭제 버튼이 고정된 상태에서는 스크롤 가능)
           onScrollToggle?.(true);
         });
-      } else if (gestureState.dx > SWIPE_THRESHOLD && isSwipeDeleteVisible) {
-        // 오른쪽으로 충분히 밀었고 삭제창이 열려있으면 닫기
-        setIsSwipeDeleteVisible(false);
-        Animated.parallel([
-          Animated.timing(translateX, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(deleteOpacity, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          })
-        ]).start(() => {
-          // 애니메이션 완료 후 스크롤 활성화
-          onScrollToggle?.(true);
-        });
       } else {
-        // 임계값을 넘지 않으면 원래 위치로 복원
+        // 원래 위치로 복원 (삭제 버튼 숨김)
         setIsSwipeDeleteVisible(false);
         Animated.parallel([
           Animated.timing(translateX, {
@@ -173,14 +166,15 @@ export const IngredientCard = ({
     // 먼저 UI 상태를 복원한 후 삭제 요청
     setIsSwipeDeleteVisible(false);
     Animated.parallel([
-      Animated.timing(translateX, {
+      Animated.spring(translateX, {
         toValue: 0,
-        duration: 200,
         useNativeDriver: true,
+        tension: 120,
+        friction: 8,
       }),
       Animated.timing(deleteOpacity, {
         toValue: 0,
-        duration: 200,
+        duration: 150,
         useNativeDriver: true,
       })
     ]).start(() => {
@@ -200,14 +194,15 @@ export const IngredientCard = ({
     if (isSwipeDeleteVisible) {
       setIsSwipeDeleteVisible(false);
       Animated.parallel([
-        Animated.timing(translateX, {
+        Animated.spring(translateX, {
           toValue: 0,
-          duration: 200,
           useNativeDriver: true,
+          tension: 100,
+          friction: 8,
         }),
         Animated.timing(deleteOpacity, {
           toValue: 0,
-          duration: 200,
+          duration: 150,
           useNativeDriver: true,
         })
       ]).start(() => {
