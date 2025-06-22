@@ -14,9 +14,10 @@ type Props = {
   onUpdate: (data: Partial<BulkFormData>) => void;
   onRemove: () => void;
   onDrag: () => void;
+  index?: number;
 };
 
-export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag }: Props) {
+export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag, index }: Props) {
   const renderRightActions = (progress: any, dragX: any) => {
     const scale = dragX.interpolate({
       inputRange: [-60, 0],
@@ -55,9 +56,10 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag }: Props) 
           <Ionicons name="reorder-three" size={22} color="#bbb" />
         </TouchableOpacity>
         <View style={[styles.fields, { overflow: 'visible' }]}>
+          <Text style={[styles.labelTitle, { marginBottom: 8, color: '#666', fontSize: 18 }]}>item {(typeof index === 'number' && !isNaN(index)) ? index + 1 : '-'}</Text>
           <Text style={styles.labelTitle}>재료명</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { marginBottom: 8 }]}
             placeholder="재료명"
             value={item.name}
             onChangeText={(text) => onUpdate({ name: text })}
@@ -167,21 +169,16 @@ const styles = StyleSheet.create({
   quantityBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f5f6fa',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   quantityBtnText: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#222',
     lineHeight: 24,
   },
   quantityInput: {
@@ -197,11 +194,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   label: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 0,
+    fontSize: 16,
+    color: '#222',
+    fontWeight: 'bold',
+    marginBottom: 4,
     marginLeft: 2,
-    fontWeight: '500',
   },
   labelTitle: {
     fontSize: 16,
