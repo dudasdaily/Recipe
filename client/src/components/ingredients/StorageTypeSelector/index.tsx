@@ -8,13 +8,18 @@ type StorageTypeSelectorProps = {
   onChange: (type: StorageType) => void;
 };
 
-const STORAGE_TYPES: { value: StorageType; label: string }[] = [
-  { value: 'ROOM_TEMP', label: '실온' },
-  { value: 'REFRIGERATED', label: '냉장' },
-  { value: 'FROZEN', label: '냉동' },
+const STORAGE_TYPES: { value: StorageType; label: string; color: string }[] = [
+  { value: 'ROOM_TEMP', label: '실온', color: '#ff9d5b' },
+  { value: 'REFRIGERATED', label: '냉장', color: '#4CAF50' },
+  { value: 'FROZEN', label: '냉동', color: '#2196F3' },
 ];
 
 export function StorageTypeSelector({ value, onChange }: StorageTypeSelectorProps) {
+  const getSelectedColor = (typeValue: StorageType) => {
+    const type = STORAGE_TYPES.find(t => t.value === typeValue);
+    return type ? type.color : '#ff9d5b';
+  };
+
   return (
     <View style={styles.container}>
       {STORAGE_TYPES.map((type) => (
@@ -22,7 +27,10 @@ export function StorageTypeSelector({ value, onChange }: StorageTypeSelectorProp
           key={type.value}
           style={[
             styles.button,
-            value === type.value && styles.selectedButton,
+            value === type.value && {
+              backgroundColor: type.color,
+              borderColor: type.color,
+            },
           ]}
           onPress={() => onChange(type.value)}
         >
@@ -56,10 +64,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
-  },
-  selectedButton: {
-    backgroundColor: '#222',
-    borderColor: '#222',
   },
   text: {
     fontSize: 14,

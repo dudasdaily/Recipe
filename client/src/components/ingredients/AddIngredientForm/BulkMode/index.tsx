@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState } from 'react';
 import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
@@ -178,9 +179,10 @@ export function BulkModeForm() {
           
           <DraggableFlatList<BulkFormData>
             data={items}
-            renderItem={({ item, drag, isActive }: RenderItemParams<BulkFormData>) => (
+            renderItem={({ item, drag, isActive, index }: any) => (
               <BulkIngredientItem
                 item={item}
+                index={typeof index === 'number' ? index : items.findIndex(i => i === item)}
                 onUpdate={(data) => {
                   const idx = items.findIndex((i) => i === item);
                   handleUpdateItem(idx, data);
@@ -218,11 +220,12 @@ export function BulkModeForm() {
         <View style={styles.footerArea}>
           <View style={styles.footer}>
             <Button
-              title="모두 추가"
+              title="추가"
               onPress={handleSubmit}
               disabled={isPending}
               loading={isPending}
-              style={styles.submitButtonFixed}
+              style={[styles.submitButtonFixed, { backgroundColor: '#f0f0f0', borderRadius: 10, borderWidth: 1, borderColor: '#fff' }] as any}
+              textStyle={{ color: '#000' }}
             />
           </View>
         </View>
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
   addItemButtonText: {
     color: '#fff',
     fontSize: 24,
-    fontWeight: '300',
+    fontWeight: '600',
     lineHeight: 24,
   },
   submitButtonFixed: {

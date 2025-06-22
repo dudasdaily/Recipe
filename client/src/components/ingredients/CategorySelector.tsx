@@ -4,6 +4,15 @@ const DEFAULT_CATEGORIES = [
   '채소', '과일', '육류', '수산물', '유제품', '기타'
 ];
 
+const CATEGORY_COLORS: { [key: string]: string } = {
+  '채소': '#4CAF50',
+  '과일': '#FFC107',
+  '육류': '#F44336',
+  '수산물': '#2196F3',
+  '유제품': '#FFFFFF',
+  '기타': '#9E9E9E',
+};
+
 type CategorySelectorProps = {
   value: string;
   onChange: (category: string) => void;
@@ -12,22 +21,43 @@ type CategorySelectorProps = {
 };
 
 export function CategorySelector({ value, onChange, categories = DEFAULT_CATEGORIES, style }: CategorySelectorProps) {
+  const getCategoryColor = (category: string) => {
+    return CATEGORY_COLORS[category] || '#9E9E9E';
+  };
+
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.row, { minWidth: '100%' }, style]}>
-      {categories.map((category, idx) => (
-        <TouchableOpacity
-          key={category}
-          style={[
-            styles.button,
-            value === category && styles.buttonSelected,
-            idx === categories.length - 1 && { marginRight: 0 },
-          ]}
-          onPress={() => onChange(category)}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.text, value === category && styles.textSelected]}>{category}</Text>
-        </TouchableOpacity>
-      ))}
+      {categories.map((category, idx) => {
+        const isSelected = value === category;
+        const categoryColor = getCategoryColor(category);
+        
+        return (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.button,
+              isSelected && {
+                backgroundColor: categoryColor,
+                borderColor: categoryColor,
+                shadowColor: categoryColor,
+              },
+              idx === categories.length - 1 && { marginRight: 0 },
+            ]}
+            onPress={() => onChange(category)}
+            activeOpacity={0.85}
+          >
+            <Text style={[
+              styles.text, 
+              isSelected && {
+                color: category === '유제품' ? '#000' : '#fff',
+                fontWeight: '700',
+              }
+            ]}>
+              {category}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -46,11 +76,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
     borderColor: 'transparent',
-  },
-  buttonSelected: {
-    backgroundColor: '#fff',
-    borderColor: '#007AFF',
-    shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
@@ -60,9 +85,5 @@ const styles = StyleSheet.create({
     color: '#222',
     fontSize: 14,
     fontWeight: '500',
-  },
-  textSelected: {
-    color: '#007AFF',
-    fontWeight: '700',
   },
 }); 

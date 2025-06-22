@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 type ButtonProps = {
   title: string;
@@ -7,6 +7,7 @@ type ButtonProps = {
   loading?: boolean;
   variant?: 'primary' | 'secondary';
   style?: ViewStyle;
+  textStyle?: TextStyle;
   children?: React.ReactNode;
 };
 
@@ -17,6 +18,7 @@ export function Button({
   loading = false,
   variant = 'primary',
   style,
+  textStyle,
   children,
 }: ButtonProps) {
   return (
@@ -41,6 +43,7 @@ export function Button({
               styles.text,
               variant === 'primary' ? styles.primaryText : styles.secondaryText,
               disabled && styles.disabledText,
+              textStyle,
             ]}
           >
             {title}
