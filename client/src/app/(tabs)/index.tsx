@@ -126,7 +126,15 @@ export default function HomeScreen() {
       const matchStorage = selectedStorage ? ingredient.storage_type === selectedStorage : true;
       const matchCategory = selectedCategory === '전체' ? true : ingredient.category === selectedCategory;
       return matchName && matchStorage && matchCategory;
-    }).sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
+    }).sort((a, b) => {
+      // 유통기한 없는 재료는 항상 맨 아래로
+      const aDate = a.expiry_date && !isNaN(new Date(a.expiry_date).getTime()) ? new Date(a.expiry_date).getTime() : null;
+      const bDate = b.expiry_date && !isNaN(new Date(b.expiry_date).getTime()) ? new Date(b.expiry_date).getTime() : null;
+      if (aDate === null && bDate === null) return 0;
+      if (aDate === null) return 1;
+      if (bDate === null) return -1;
+      return aDate - bDate;
+    });
   }, [ingredients, searchQuery, selectedStorage, selectedCategory]);
 
   const expiringIngredients = useMemo(() => {

@@ -36,13 +36,14 @@ const ingredientImages: { [key: string]: any } = {
   apple: require('../../../../assets/images/apple.png'),
   dumpling: require('../../../../assets/images/dumpling.png'),
   carrot: require('../../../../assets/images/carrot.png'),
+  mutton: require('../../../../assets/images/mutton.png'),
 };
 
 // 한글 → 영어 매핑
 const korToEng: { [key: string]: string } = {
   '양파': 'onion',
   '토마토': 'tomato',
-  '파프리카': 'paprika',
+  '피망': 'paprika',
   '가지': 'eggplant',
   '오이': 'cucumber',
   '대파': 'greenonion',
@@ -52,6 +53,7 @@ const korToEng: { [key: string]: string } = {
   '사과': 'apple',
   '만두': 'dumpling',
   '당근': 'carrot',
+  '양고기': 'mutton',
 };
 
 // 재료명으로 이미지 소스 결정

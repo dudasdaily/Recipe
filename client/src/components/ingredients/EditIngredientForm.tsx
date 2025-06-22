@@ -106,12 +106,6 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
       <Text style={styles.title}>재료 수정</Text>
       <View style={styles.form}>
         <Text style={styles.label}>재료명</Text>
-        <Button
-          title="삭제"
-          onPress={handleDelete}
-          style={styles.deleteBtn}
-          loading={isDeleting}
-        />
         <TextInput
           style={styles.input}
           value={formData.name}
