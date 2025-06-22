@@ -28,9 +28,10 @@ export const IngredientCard = ({
   onLongPress,
   onEdit,
   onDelete,
+  onScrollToggle,
   hideImage,
   minimalView,
-}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'onDelete' | 'hideImage' | 'minimalView'>) => {
+}: Pick<IngredientCardProps, 'ingredient' | 'compact' | 'selectionMode' | 'selected' | 'onSelect' | 'onLongPress' | 'onEdit' | 'onDelete' | 'onScrollToggle' | 'hideImage' | 'minimalView'>) => {
   const storageTypeLabel = {
     ROOM_TEMP: '실온',
     REFRIGERATED: '냉장',
@@ -58,14 +59,25 @@ export const IngredientCard = ({
 
   // 스와이프 제스처 핸들러
   const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: (evt, gestureState) => {
+      // 터치 시작 시점에서 제스처 캡처 시도
+      return !selectionMode && !minimalView;
+    },
     onMoveShouldSetPanResponder: (evt, gestureState) => {
       // 가로 스와이프일 때만 반응하고, 선택 모드가 아닐 때만 작동
-      return !selectionMode && !minimalView && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 15;
+      return !selectionMode && !minimalView && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
     },
+    onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+      // 더 적극적으로 가로 스와이프 제스처를 캡처
+      return !selectionMode && !minimalView && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 8;
+    },
+    onPanResponderTerminationRequest: () => false, // 다른 컴포넌트가 제스처를 가져가는 것을 방지
     onPanResponderGrant: () => {
       // 간단하게 현재 애니메이션 값으로 시작
       translateX.stopAnimation();
       deleteOpacity.stopAnimation();
+      // 스와이프 시작 시 부모 스크롤 비활성화
+      onScrollToggle?.(false);
     },
     onPanResponderMove: (evt, gestureState) => {
       // 오른쪽에서 왼쪽 스와이프만 허용 (음수 방향), 최대 -100까지만
@@ -92,7 +104,10 @@ export const IngredientCard = ({
             duration: 200,
             useNativeDriver: true,
           })
-        ]).start();
+        ]).start(() => {
+          // 애니메이션 완료 후 스크롤 활성화 (삭제 버튼이 고정된 상태에서는 스크롤 가능)
+          onScrollToggle?.(true);
+        });
       } else {
         // 임계값을 넘지 않으면 원래 위치로 복원
         setIsSwipeDeleteVisible(false);
@@ -107,17 +122,17 @@ export const IngredientCard = ({
             duration: 200,
             useNativeDriver: true,
           })
-        ]).start();
+        ]).start(() => {
+          // 애니메이션 완료 후 스크롤 활성화
+          onScrollToggle?.(true);
+        });
       }
     },
   });
 
   // 스와이프 삭제 핸들러
   const handleSwipeDelete = () => {
-    if (onDelete) {
-      onDelete(ingredient.id);
-    }
-    // 삭제 후 원래 위치로 복원
+    // 먼저 UI 상태를 복원한 후 삭제 요청
     setIsSwipeDeleteVisible(false);
     Animated.parallel([
       Animated.timing(translateX, {
@@ -130,7 +145,16 @@ export const IngredientCard = ({
         duration: 200,
         useNativeDriver: true,
       })
-    ]).start();
+    ]).start(() => {
+      // 애니메이션 완료 후 스크롤 활성화 및 삭제 요청
+      onScrollToggle?.(true);
+      // 약간의 지연 후 삭제 요청하여 상태 업데이트 충돌 방지
+      setTimeout(() => {
+        if (onDelete) {
+          onDelete(ingredient.id);
+        }
+      }, 50);
+    });
   };
 
   // 스와이프 취소 (다른 곳 터치 시)
@@ -148,7 +172,10 @@ export const IngredientCard = ({
           duration: 200,
           useNativeDriver: true,
         })
-      ]).start();
+      ]).start(() => {
+        // 애니메이션 완료 후 스크롤 활성화
+        onScrollToggle?.(true);
+      });
     }
   };
 

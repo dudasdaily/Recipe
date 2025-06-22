@@ -7,6 +7,7 @@ export type IngredientCardProps = {
   onSelect?: (id: number) => void;
   onEdit?: (ingredient: Ingredient) => void;
   onDelete?: (id: number) => void;
+  onScrollToggle?: (enabled: boolean) => void;
   selectionMode?: boolean;
   onLongPress?: () => void;
   onPress?: () => void;

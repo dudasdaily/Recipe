@@ -38,6 +38,7 @@ export default function HomeScreen() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const [isScrollEnabled, setIsScrollEnabled] = useState(true);
   
   const insets = useSafeAreaInsets();
 
@@ -175,6 +176,7 @@ export default function HomeScreen() {
         stickyHeaderIndices={[0]}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 50 }]}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={isScrollEnabled}
       >
         <View style={styles.stickyHeader}>
           {/* 타이틀 */}
@@ -312,12 +314,19 @@ export default function HomeScreen() {
                 onSelect={() => handleSelect(item.id)}
                 onLongPress={() => handleLongPress(item.id)}
                 onEdit={handleEdit}
-                onDelete={(id) => deleteMutate(id)}
+                onDelete={(id) => {
+                  // 삭제 요청을 다음 렌더링 사이클로 지연
+                  requestAnimationFrame(() => {
+                    deleteMutate(id);
+                  });
+                }}
+                onScrollToggle={setIsScrollEnabled}
               />
             )}
             keyExtractor={item => String(item.id)}
             estimatedItemSize={100}
             contentContainerStyle={styles.listContent}
+            scrollEnabled={isScrollEnabled}
           />
         )}
       </ScrollView>
