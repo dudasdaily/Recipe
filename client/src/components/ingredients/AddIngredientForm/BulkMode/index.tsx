@@ -25,12 +25,8 @@ const initialItem: BulkFormData = {
   expiry_date: '',
 };
 
-export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] }) {
-  const [items, setItems] = useState<BulkFormData[]>(
-    initialNames.length > 0
-      ? initialNames.map(name => ({ ...initialItem, name }))
-      : [initialItem]
-  );
+export function BulkModeForm() {
+  const [items, setItems] = useState<BulkFormData[]>([initialItem]);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
   const [showReceiptFlow, setShowReceiptFlow] = useState(false);
@@ -160,7 +156,6 @@ export function BulkModeForm({ initialNames = [] }: { initialNames?: string[] })
       >
         <View style={[styles.flexArea, { minHeight: 200 }]}>
           <ImageRecognitionActions
-            mode="MULTI"
             onPressReceipt={handleReceiptScan}
             onPressCamera={() => Toast.show({ type: 'info', text1: '카메라 촬영 기능 준비 중' })}
             onImagePicked={handleImagePicked}

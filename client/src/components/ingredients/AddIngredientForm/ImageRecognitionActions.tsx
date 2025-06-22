@@ -7,11 +7,10 @@ import Toast from 'react-native-toast-message';
 type Props = {
   onPressReceipt: () => void;
   onPressCamera: () => void;
-  mode: 'SINGLE' | 'MULTI';
   onImagePicked?: (uri: string) => void;
 };
 
-export function ImageRecognitionActions({ onPressReceipt, onPressCamera, mode, onImagePicked }: Props) {
+export function ImageRecognitionActions({ onPressReceipt, onPressCamera, onImagePicked }: Props) {
   // 권한 요청 함수
   const requestCameraPermission = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -70,7 +69,6 @@ export function ImageRecognitionActions({ onPressReceipt, onPressCamera, mode, o
         onPress={onPressReceipt}
         variant="secondary"
         style={styles.button}
-        disabled={mode === 'SINGLE'}
       >
         <Ionicons name="receipt-outline" size={20} color="#007AFF" style={{ marginRight: 6 }} />
         <Text>영수증 촬영</Text>
@@ -94,9 +92,6 @@ export function ImageRecognitionActions({ onPressReceipt, onPressCamera, mode, o
         <Ionicons name="camera-outline" size={20} color="#007AFF" style={{ marginRight: 6 }} />
         <Text>재료 사진 촬영</Text>
       </Button>
-      {mode === 'SINGLE' && (
-        <Text style={styles.hint}>* 영수증 촬영은 다중 추가 모드에서만 가능합니다.</Text>
-      )}
     </View>
   );
 }
@@ -113,14 +108,5 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     minWidth: 120,
-  },
-  hint: {
-    position: 'absolute',
-    left: 0,
-    top: 44,
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-    marginLeft: 2,
   },
 }); 
