@@ -13,8 +13,7 @@ import type { Ingredient } from '@/types/api';
 import { ExpiryDatePicker } from '@/components/ingredients/ExpiryDatePicker';
 import { Swipeable } from 'react-native-gesture-handler';
 
-import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
-import { useReceiptStore } from '@/stores/receipt';
+
 import { Animated as RNAnimated } from 'react-native';
 
 
@@ -47,13 +46,9 @@ export function BulkModeForm({
   const [items, setItems] = useState<(BulkFormData & { _key?: string })[]>([{ ...initialItem, _key: String(Date.now()) }]);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkStorage, setBulkStorage] = useState('');
-  const [showReceiptFlow, setShowReceiptFlow] = useState(false);
   const queryClient = useQueryClient();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const cardAnimRefs = useRef<{ [key: string]: RNAnimated.Value }>({});
-
-  // 영수증 스토어에서 편집된 아이템들 가져오기
-  const { editableItems, resetState } = useReceiptStore();
 
   // showBulkSettings가 변경될 때 애니메이션 실행
   useEffect(() => {
@@ -205,41 +200,7 @@ export function BulkModeForm({
 
 
 
-  // 영수증 스캔 시작
-  const handleReceiptScan = () => {
-    setShowReceiptFlow(true);
-  };
 
-  // 영수증 스캔 완료 처리
-  const handleReceiptComplete = () => {
-    // 영수증에서 인식된 재료들을 현재 아이템 목록에 추가
-    if (editableItems.length > 0) {
-      const newItems = editableItems.map(item => ({
-        name: item.name,
-        category: bulkCategory || '기타',
-        storage_type: (bulkStorage as BulkFormData['storage_type']) || 'REFRIGERATED',
-        default_expiry_days: 7,
-        quantity: item.quantity,
-        expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      }));
-      
-      setItems(prev => [...prev.filter(item => item.name), ...newItems]);
-      
-      Toast.show({
-        type: 'success',
-        text1: '영수증 처리 완료',
-        text2: `${newItems.length}개의 재료가 추가되었습니다.`,
-      });
-    }
-    
-    setShowReceiptFlow(false);
-  };
-
-  // 영수증 스캔 취소
-  const handleReceiptCancel = () => {
-    setShowReceiptFlow(false);
-    resetState();
-  };
 
   // 새 카드 추가 시 애니메이션 실행
   useEffect(() => {
@@ -375,13 +336,6 @@ export function BulkModeForm({
 
 
       </KeyboardAvoidingView>
-
-      {/* 영수증 스캔 플로우 */}
-      <ReceiptFlow
-        visible={showReceiptFlow}
-        onClose={handleReceiptCancel}
-        onComplete={handleReceiptComplete}
-      />
     </>
   );
 }

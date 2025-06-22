@@ -5,13 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
-import { ReceiptFlow } from '@/components/ingredients/ReceiptFlow';
+import { SimpleReceiptScanner } from '@/components/ingredients/SimpleReceiptScanner';
 import { analyzeIngredientImage } from '@/services/api/vision';
 
 export default function AddScreen() {
   const [showBulkSettings, setShowBulkSettings] = useState(false);
-  const [showReceiptFlow, setShowReceiptFlow] = useState(false);
-  const [extractedIngredients, setExtractedIngredients] = useState<string[]>([]);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [receiptIngredients, setReceiptIngredients] = useState<string[]>([]);
   const [cameraIngredients, setCameraIngredients] = useState<string[]>([]);
 
 
@@ -19,7 +19,7 @@ export default function AddScreen() {
 
   // 영수증 버튼 핸들러
   const handleReceiptPress = () => {
-    setShowReceiptFlow(true);
+    setShowReceiptScanner(true);
   };
 
   // 권한 요청 함수들
@@ -140,10 +140,10 @@ export default function AddScreen() {
   };
 
   // 영수증에서 재료가 추출되었을 때 처리
-  const handleIngredientsExtracted = (ingredients: string[]) => {
-    console.log('AddScreen - 재료 추출됨:', ingredients);
-    setExtractedIngredients(ingredients);
-    setShowReceiptFlow(false);
+  const handleReceiptIngredientsExtracted = (ingredients: string[]) => {
+    console.log('AddScreen - 영수증 재료 추출됨:', ingredients);
+    setReceiptIngredients(ingredients);
+    setShowReceiptScanner(false);
     Toast.show({
       type: 'success',
       text1: '영수증 처리 완료',
@@ -151,19 +151,14 @@ export default function AddScreen() {
     });
   };
 
-  // 영수증 플로우 완료 처리
-  const handleReceiptComplete = () => {
-    setShowReceiptFlow(false);
+  // 영수증 스캐너 취소 처리
+  const handleReceiptScannerClose = () => {
+    setShowReceiptScanner(false);
   };
 
-  // 영수증 플로우 취소 처리
-  const handleReceiptCancel = () => {
-    setShowReceiptFlow(false);
-  };
-
-  // 추출된 재료 사용 완료 처리 (영수증)
-  const handleIngredientsUsed = () => {
-    setExtractedIngredients([]);
+  // 영수증 재료 사용 완료 처리
+  const handleReceiptIngredientsUsed = () => {
+    setReceiptIngredients([]);
   };
 
   // 카메라 재료 사용 완료 처리
@@ -214,18 +209,17 @@ export default function AddScreen() {
       
       <AddIngredientForm 
         showBulkSettings={showBulkSettings}
-        extractedIngredients={extractedIngredients}
-        onIngredientsUsed={handleIngredientsUsed}
+        extractedIngredients={receiptIngredients}
+        onIngredientsUsed={handleReceiptIngredientsUsed}
         cameraIngredients={cameraIngredients}
         onCameraIngredientsUsed={handleCameraIngredientsUsed}
       />
 
-      {/* 영수증 스캔 플로우 */}
-      <ReceiptFlow
-        visible={showReceiptFlow}
-        onClose={handleReceiptCancel}
-        onComplete={handleReceiptComplete}
-        onIngredientsExtracted={handleIngredientsExtracted}
+      {/* 영수증 스캔 */}
+      <SimpleReceiptScanner
+        visible={showReceiptScanner}
+        onClose={handleReceiptScannerClose}
+        onIngredientsExtracted={handleReceiptIngredientsExtracted}
       />
     </SafeAreaView>
   );
