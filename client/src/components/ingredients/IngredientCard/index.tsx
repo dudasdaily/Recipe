@@ -22,6 +22,48 @@ function getDDay(expiryDate: string) {
 
 type IngredientCardPropsWithDelete = IngredientCardProps & { onDelete?: (id: number) => void };
 
+// 재료명-이미지 매핑 객체
+const ingredientImages: { [key: string]: any } = {
+  onion: require('../../../../assets/images/onion.png'),
+  tomato: require('../../../../assets/images/tomato.png'),
+  paprika: require('../../../../assets/images/paprika.png'),
+  eggplant: require('../../../../assets/images/eggplant.png'),
+  cucumber: require('../../../../assets/images/cucumber.png'),
+  greenonion: require('../../../../assets/images/greenonion.png'),
+  sprout: require('../../../../assets/images/sprout.png'),
+  chili: require('../../../../assets/images/chili.png'),
+  rice: require('../../../../assets/images/rice.png'),
+  apple: require('../../../../assets/images/apple.png'),
+  dumpling: require('../../../../assets/images/dumpling.png'),
+  carrot: require('../../../../assets/images/carrot.png'),
+};
+
+// 한글 → 영어 매핑
+const korToEng: { [key: string]: string } = {
+  '양파': 'onion',
+  '토마토': 'tomato',
+  '파프리카': 'paprika',
+  '가지': 'eggplant',
+  '오이': 'cucumber',
+  '대파': 'greenonion',
+  '새싹': 'sprout',
+  '고추': 'chili',
+  '쌀': 'rice',
+  '사과': 'apple',
+  '만두': 'dumpling',
+  '당근': 'carrot',
+};
+
+// 재료명으로 이미지 소스 결정
+function getIngredientImage(name: string) {
+  const normalized = name.trim().replace(/\s/g, '').replace(/[^가-힣a-zA-Z0-9]/g, '');
+  const key = korToEng[normalized] || normalized.toLowerCase();
+  if (!ingredientImages[key]) {
+    if (__DEV__) console.warn('이미지 매핑 실패:', name, '→', key);
+  }
+  return ingredientImages[key] || require('../../../../assets/images/notready.png');
+}
+
 export const IngredientCard = ({
   ingredient,
   compact,
@@ -250,9 +292,10 @@ export const IngredientCard = ({
       : new Date(ingredient.expiry_date).toLocaleDateString();
 
   // 이미지 URL이 있으면 사용, 없으면 placeholder
-  const imageUrl = ingredient.imageUrl
-    ? { uri: ingredient.imageUrl }
-    : require('../../../../assets/images/paprika.png');
+  const imageUrl =
+    ingredient.imageUrl && typeof ingredient.imageUrl === 'string' && ingredient.imageUrl.trim() !== ''
+      ? { uri: ingredient.imageUrl }
+      : getIngredientImage(ingredient.name);
 
   // Swipeable 삭제 버튼 렌더러 (더 부드럽고 멋지게)
   const renderRightActions = (progress: any, dragX: any) => {
