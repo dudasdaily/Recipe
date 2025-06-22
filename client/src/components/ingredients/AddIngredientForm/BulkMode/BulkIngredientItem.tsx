@@ -150,6 +150,8 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 15,
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#bdbdbd',
   },
   removeBtn: {
     marginLeft: 8,
