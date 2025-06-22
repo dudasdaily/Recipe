@@ -106,6 +106,22 @@ export default function HomeScreen() {
     setIsDeleting(false);
   };
 
+  const handleSelectAll = () => {
+    const allIds = filteredIngredients.map(ingredient => ingredient.id);
+    const isAllSelected = allIds.length > 0 && allIds.every(id => selectedIds.includes(id));
+    
+    if (isAllSelected) {
+      // 전체 해제
+      setSelectedIds([]);
+    } else {
+      // 전체 선택
+      setSelectedIds(allIds);
+    }
+  };
+
+  const isAllSelected = filteredIngredients.length > 0 && 
+    filteredIngredients.every(ingredient => selectedIds.includes(ingredient.id));
+
   const handleEdit = (ingredient: Ingredient) => {
     // 현재 ingredients 리스트에서 해당 재료가 여전히 존재하는지 확인
     const existingIngredient = ingredients.find(item => item.id === ingredient.id);
@@ -216,23 +232,67 @@ export default function HomeScreen() {
         </View>
         {/* 선택 모드 UI */}
         {isSelectionMode && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, backgroundColor: '#f7f7fa' }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>선택됨: {selectedIds.length}개</Text>
-            <TouchableOpacity onPress={handleCancelSelection} style={{ marginLeft: 12 }} disabled={isDeleting}>
-              <Ionicons name="close" size={22} color="#888" />
-              <Text style={{ marginLeft: 4, fontSize: 15 }}>취소</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBulkDelete}
-              disabled={selectedIds.length === 0 || isDeleting}
-              style={{ marginLeft: 16, opacity: selectedIds.length === 0 || isDeleting ? 0.5 : 1, flexDirection: 'row', alignItems: 'center' }}
-            >
-              <Ionicons name="trash" size={20} color="#ff3b30" />
-              <Text style={{ color: '#ff3b30', marginLeft: 4, fontSize: 15 }}>선택삭제</Text>
-              {isDeleting && (
-                <ActivityIndicator size="small" color="#ff3b30" style={{ marginLeft: 6 }} />
-              )}
-            </TouchableOpacity>
+          <View style={styles.selectionToolbar}>
+            {/* 왼쪽: 선택 정보 */}
+            <View style={styles.selectionInfo}>
+              <Text style={styles.selectionCount}>
+                {selectedIds.length}개 선택됨
+              </Text>
+              <Text style={styles.totalCount}>
+                / {filteredIngredients.length}개
+              </Text>
+            </View>
+            
+            {/* 오른쪽: 버튼들 */}
+            <View style={styles.selectionActions}>
+              {/* 전체 선택/해제 버튼 */}
+              <TouchableOpacity 
+                onPress={handleSelectAll}
+                style={[styles.actionButton, styles.selectAllButton]}
+                disabled={isDeleting || filteredIngredients.length === 0}
+              >
+                                 <Ionicons 
+                   name={isAllSelected ? "checkbox" : "square-outline"} 
+                   size={20} 
+                   color="#000" 
+                 />
+                <Text style={styles.selectAllText}>
+                  {isAllSelected ? "전체해제" : "전체선택"}
+                </Text>
+              </TouchableOpacity>
+              
+              {/* 삭제 버튼 */}
+              <TouchableOpacity
+                onPress={handleBulkDelete}
+                disabled={selectedIds.length === 0 || isDeleting}
+                style={[
+                  styles.actionButton, 
+                  styles.deleteButton,
+                  (selectedIds.length === 0 || isDeleting) && styles.disabledButton
+                ]}
+              >
+                <Ionicons name="trash" size={18} color="#ff3b30" />
+                <Text style={[
+                  styles.deleteText,
+                  (selectedIds.length === 0 || isDeleting) && styles.disabledText
+                ]}>
+                  삭제
+                </Text>
+                {isDeleting && (
+                  <ActivityIndicator size="small" color="#ff3b30" style={{ marginLeft: 4 }} />
+                )}
+              </TouchableOpacity>
+              
+              {/* 취소 버튼 */}
+              <TouchableOpacity 
+                onPress={handleCancelSelection} 
+                style={[styles.actionButton, styles.cancelButton]}
+                disabled={isDeleting}
+              >
+                <Ionicons name="close" size={18} color="#666" />
+                <Text style={styles.cancelText}>취소</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         {/* 식재료 목록 (유통기한 임박순) */}
@@ -390,5 +450,81 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // 선택 모드 툴바 스타일
+  selectionToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  selectionInfo: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  selectionCount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  totalCount: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 2,
+  },
+  selectionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 4,
+  },
+  selectAllButton: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  selectAllText: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  deleteButton: {
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+  },
+  deleteText: {
+    fontSize: 14,
+    color: '#ff3b30',
+    fontWeight: '500',
+  },
+  cancelButton: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  cancelText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    opacity: 0.5,
   },
 }); 
