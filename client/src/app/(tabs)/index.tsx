@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Ingredient } from '@/types/api';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { ExpiryAlert } from '@/components/ingredients/ExpiryAlert';
 
 const EXPIRY_THRESHOLD_DAYS = 7;
 const STORAGE_TYPES = [
@@ -170,6 +171,12 @@ export default function HomeScreen() {
             />
           </View>
           <View style={{ height: 8 }} />
+          {/* 유통기한 임박 재료 개수 */}
+          <Text style={{ marginLeft: 25, fontSize: 14, color: '#666', fontWeight: 'bold', marginBottom: 2 }}>
+            임박 {expiringIngredients.length}개
+          </Text>
+          {/* 유통기한 임박 재료 한 줄 표시 */}
+          <ExpiryAlert ingredients={expiringIngredients} />
           {/* 보관방법/카테고리 드롭다운 한 줄 */}
           <View style={styles.rowContainer}>
             <View style={styles.selectBox}>
@@ -205,7 +212,7 @@ export default function HomeScreen() {
               />
             </View>
           </View>
-          <Text style={{ marginTop: 2, marginLeft: 25, fontSize: 14, color: '#666', textAlign: 'left' }}>등록 {filteredIngredients.length}개</Text>
+          <Text style={{ marginLeft: 25, fontSize: 14, color: '#666', fontWeight: 'bold', marginBottom: 2 }}>등록 {filteredIngredients.length}개</Text>
         </View>
         {/* 선택 모드 UI */}
         {isSelectionMode && (
