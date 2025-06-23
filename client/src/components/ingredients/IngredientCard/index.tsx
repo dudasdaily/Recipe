@@ -56,12 +56,20 @@ const korToEng: { [key: string]: string } = {
   '양고기': 'mutton',
 };
 
+// 이미지 매핑 실패한 재료들을 기록 (앱 세션 동안 유지)
+const failedImageMappings = new Set<string>();
+
 // 재료명으로 이미지 소스 결정
 function getIngredientImage(name: string) {
   const normalized = name.trim().replace(/\s/g, '').replace(/[^가-힣a-zA-Z0-9]/g, '');
   const key = korToEng[normalized] || normalized.toLowerCase();
+  
   if (!ingredientImages[key]) {
-    if (__DEV__) console.warn('이미지 매핑 실패:', name, '→', key);
+    // 이미 실패 기록이 있는 재료는 로그를 출력하지 않음
+    if (!failedImageMappings.has(name)) {
+      if (__DEV__) console.warn('이미지 매핑 실패:', name, '→', key);
+      failedImageMappings.add(name); // 실패한 재료 기록
+    }
   }
   return ingredientImages[key] || require('../../../../assets/images/notready.png');
 }
