@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Pressable, Animated } from 'react-native';
 import type { Ingredient } from '@/types/api';
 import { useUpdateIngredient, useDeleteIngredient } from '@/hooks/query/useIngredients';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,10 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateIngredient();
   const { mutate: deleteMutate, isPending: isDeleting } = useDeleteIngredient();
   const queryClient = useQueryClient();
+  
+  // 버튼 프레스 애니메이션을 위한 ref들
+  const saveButtonPressAnim = useRef(new Animated.Value(1)).current;
+  const closeButtonPressAnim = useRef(new Animated.Value(1)).current;
 
   const handleSave = () => {
     // 데이터 정리 및 검증
@@ -101,6 +105,25 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
     deleteMutate(ingredient.id, { onSuccess: onClose });
   };
 
+  // 버튼 프레스 애니메이션 헬퍼 함수들
+  const createPressAnimations = (animValue: Animated.Value) => ({
+    pressIn: () => {
+      Animated.spring(animValue, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }).start();
+    },
+    pressOut: () => {
+      Animated.spring(animValue, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    },
+  });
+
+  const saveAnimations = createPressAnimations(saveButtonPressAnim);
+  const closeAnimations = createPressAnimations(closeButtonPressAnim);
+
   return (
     <View style={styles.modalContent}>
       <Text style={styles.title}>재료 수정</Text>
@@ -136,20 +159,55 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
             setFormData(prev => ({ ...prev, quantity: num }));
           }}
         />
-        <Button
-          title="저장"
-          onPress={handleSave}
-          loading={isUpdating}
-          style={Object.assign({}, styles.saveBtn, { backgroundColor: '#bdbdbd' })}
-          textStyle={{ color: '#fff' }}
-        />
-        <Button
-          title="닫기"
-          onPress={onClose}
-          variant="secondary"
-          style={Object.assign({}, styles.closeBtn, { borderColor: '#666', backgroundColor: '#fff' })}
-          textStyle={{ color: '#666' }}
-        />
+        <Animated.View
+          style={[
+            styles.flatButtonContainer,
+            {
+              transform: [{ scale: saveButtonPressAnim }],
+            },
+          ]}
+        >
+          <Pressable
+            style={[
+              styles.flatButton,
+              styles.saveBtn,
+              { backgroundColor: '#bdbdbd' }, // 기존 배경색 유지
+              isUpdating && styles.flatButtonDisabled
+            ]}
+            onPress={handleSave}
+            onPressIn={saveAnimations.pressIn}
+            onPressOut={saveAnimations.pressOut}
+            disabled={isUpdating}
+          >
+            <Text style={[styles.flatButtonText, { color: '#fff' }]}>
+              {isUpdating ? '저장 중...' : '저장'}
+            </Text>
+          </Pressable>
+        </Animated.View>
+        
+        <Animated.View
+          style={[
+            styles.flatButtonContainer,
+            {
+              transform: [{ scale: closeButtonPressAnim }],
+            },
+          ]}
+        >
+          <Pressable
+            style={[
+              styles.flatButton,
+              styles.closeBtn,
+              { backgroundColor: '#fff', borderWidth: 1, borderColor: '#666' } // 기존 배경색과 테두리 유지
+            ]}
+            onPress={onClose}
+            onPressIn={closeAnimations.pressIn}
+            onPressOut={closeAnimations.pressOut}
+          >
+            <Text style={[styles.flatButtonText, { color: '#666' }]}>
+              닫기
+            </Text>
+          </Pressable>
+        </Animated.View>
       </View>
     </View>
   );
@@ -201,5 +259,27 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     marginTop: 4,
+  },
+  flatButtonContainer: {
+    // 애니메이션 컨테이너
+  },
+  flatButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 64,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+    elevation: 0, // 플랫 디자인은 그림자 없음
+    shadowOpacity: 0,
+  },
+  flatButtonDisabled: {
+    opacity: 0.6,
+  },
+  flatButtonText: {
+    fontSize: 14,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    fontFamily: 'System',
   },
 }); 

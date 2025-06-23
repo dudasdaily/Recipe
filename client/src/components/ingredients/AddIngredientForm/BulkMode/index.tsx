@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
+import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, TouchableOpacity, Animated, Pressable } from 'react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
@@ -49,6 +49,9 @@ export function BulkModeForm({
   const queryClient = useQueryClient();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const cardAnimRefs = useRef<{ [key: string]: RNAnimated.Value }>({});
+  
+  // 버튼 프레스 효과를 위한 애니메이션
+  const buttonPressAnim = useRef(new Animated.Value(1)).current;
 
   // showBulkSettings가 변경될 때 애니메이션 실행
   useEffect(() => {
@@ -198,6 +201,21 @@ export function BulkModeForm({
     mutate(validItems);
   };
 
+  // 버튼 프레스 애니메이션 함수들
+  const handlePressIn = () => {
+    Animated.spring(buttonPressAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(buttonPressAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
 
 
 
@@ -323,14 +341,28 @@ export function BulkModeForm({
         
         <View style={styles.footerArea}>
           <View style={styles.footer}>
-            <Button
-              title="추가"
-              onPress={handleSubmit}
-              disabled={isPending}
-              loading={isPending}
-              style={[styles.submitButtonFixed, { backgroundColor: '#f0f0f0', borderRadius: 10, borderWidth: 1, borderColor: '#fff' }] as any}
-              textStyle={{ color: '#000' }}
-            />
+            <Animated.View
+              style={[
+                {
+                  transform: [{ scale: buttonPressAnim }],
+                },
+              ]}
+            >
+              <Pressable
+                style={[
+                  styles.flatButton,
+                  isPending && styles.flatButtonDisabled
+                ]}
+                onPress={handleSubmit}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                disabled={isPending}
+              >
+                <Text style={styles.flatButtonText}>
+                  {isPending ? '추가 중...' : '추가'}
+                </Text>
+              </Pressable>
+            </Animated.View>
           </View>
         </View>
 
@@ -408,5 +440,28 @@ const styles = StyleSheet.create({
   },
   bulkSettingsContainer: {
     overflow: 'hidden',
+  },
+  flatButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 64,
+    marginVertical: 30,
+    marginHorizontal: 25,
+    backgroundColor: '#3498db', // Picton Blue - 깔끔한 파란색
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+    elevation: 0, // 플랫 디자인은 그림자 없음
+    shadowOpacity: 0,
+  },
+  flatButtonDisabled: {
+    backgroundColor: '#bdc3c7', // 비활성 상태 색상
+  },
+  flatButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    fontFamily: 'System', // Segoe UI는 React Native에서 System 폰트로 대체
   },
 }); 
