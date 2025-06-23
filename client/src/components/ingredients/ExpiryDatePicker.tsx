@@ -242,6 +242,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingBottom: 34, // Safe area
     maxHeight: '70%',
+    minHeight: 400, // 최소 높이 확보
   },
   modalHeader: {
     flexDirection: 'row',
@@ -251,23 +252,31 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    height: 56, // 고정 높이로 일관성 유지
   },
   headerButton: {
     minWidth: 60,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
   },
   confirmButtonText: {
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
+    textAlign: 'center',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    textAlign: 'center',
+    flex: 1, // 중앙 정렬을 위해 flex 추가
   },
   
   // 유통기한 없음 섹션
@@ -278,12 +287,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   noExpiryOption: {
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
   },
   noExpiryContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 44, // 터치 영역 확보
   },
   noExpiryText: {
     fontSize: 16,
@@ -309,6 +322,7 @@ const styles = StyleSheet.create({
   datePickerSection: {
     paddingHorizontal: 20,
     paddingVertical: 16,
+    alignItems: 'center', // 중앙 정렬
   },
   datePickerDisabled: {
     opacity: 0.5,
@@ -318,12 +332,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginBottom: 12,
+    textAlign: 'center', // 제목도 중앙 정렬
+    width: '100%',
   },
   sectionTitleDisabled: {
     color: '#999',
   },
   datePicker: {
     height: Platform.OS === 'ios' ? 200 : 120,
+    width: '100%', // 전체 너비 사용
+    alignSelf: 'center', // 자체 중앙 정렬
   },
   datePickerInactive: {
     opacity: 0.3,
