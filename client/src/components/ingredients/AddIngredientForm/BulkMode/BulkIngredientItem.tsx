@@ -74,6 +74,7 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag, index }: 
             style={{ marginBottom: 0 }}
           />
         </ScrollView>
+        <Text style={styles.labelTitle}>보관방법</Text>
         <StorageTypeSelector
           value={item.storage_type}
           onChange={(type) => onUpdate({ storage_type: type })}
@@ -146,6 +147,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
+    borderWidth: 1,
+    borderColor: '#bbb',
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
