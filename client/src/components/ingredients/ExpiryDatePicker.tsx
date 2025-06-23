@@ -191,6 +191,7 @@ export function ExpiryDatePicker({ value, onChange, placeholder = '유통기한 
                 style={[styles.datePicker, !tempHasExpiry && styles.datePickerInactive]}
                 textColor={tempHasExpiry ? "#000" : "#999"}
                 disabled={!tempHasExpiry}
+                locale="ko_KR"
               />
             </View>
           </View>
