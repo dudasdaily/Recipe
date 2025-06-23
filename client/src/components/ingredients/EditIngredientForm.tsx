@@ -32,6 +32,9 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
     expiry_date: formatExpiryDate(ingredient.expiry_date),
     default_expiry_days: ingredient.default_expiry_days || 0,
   });
+  
+  // 수량 입력을 위한 별도 문자열 상태 (사용자 입력 중에는 자유롭게 입력 가능)
+  const [quantityInput, setQuantityInput] = useState(String(ingredient.quantity || 1));
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateIngredient();
   const { mutate: deleteMutate, isPending: isDeleting } = useDeleteIngredient();
   const queryClient = useQueryClient();
@@ -41,12 +44,16 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
   const closeButtonPressAnim = useRef(new Animated.Value(1)).current;
 
   const handleSave = () => {
+    // 수량 입력값을 숫자로 변환하고 검증
+    const parsedQuantity = parseInt(quantityInput.replace(/[^0-9]/g, ''), 10);
+    const finalQuantity = isNaN(parsedQuantity) || parsedQuantity < 1 ? 1 : parsedQuantity;
+    
     // 데이터 정리 및 검증
     const cleanedData = {
       name: formData.name.trim(),
       category: formData.category,
       storage_type: formData.storage_type,
-      quantity: formData.quantity,
+      quantity: finalQuantity,
       expiry_date: formData.expiry_date || '', // 빈 문자열 유지 또는 원본 값 유지
       default_expiry_days: formData.default_expiry_days || 0, // 0으로 기본값 설정
     };
@@ -57,7 +64,7 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
       return;
     }
 
-    if (cleanedData.quantity < 1) {
+    if (finalQuantity < 1) {
       alert('수량은 1 이상이어야 합니다.');
       return;
     }
@@ -153,10 +160,19 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
         <TextInput
           style={styles.input}
           keyboardType="number-pad"
-          value={String(formData.quantity)}
+          value={quantityInput}
           onChangeText={text => {
-            const num = Math.max(1, parseInt(text.replace(/[^0-9]/g, ''), 10) || 1);
-            setFormData(prev => ({ ...prev, quantity: num }));
+            // 숫자만 허용하되, 사용자가 자유롭게 입력할 수 있도록 함
+            const cleanedText = text.replace(/[^0-9]/g, '');
+            setQuantityInput(cleanedText);
+          }}
+          placeholder="1"
+          placeholderTextColor="#999"
+          onBlur={() => {
+            // 포커스를 잃을 때만 최소값 보장 (선택적)
+            if (!quantityInput || quantityInput === '0') {
+              setQuantityInput('1');
+            }
           }}
         />
         <Animated.View
