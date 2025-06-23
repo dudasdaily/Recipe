@@ -171,7 +171,7 @@ export function EditIngredientForm({ ingredient, onClose }: { ingredient: Ingred
             style={[
               styles.flatButton,
               styles.saveBtn,
-              { backgroundColor: '#bdbdbd' }, // 기존 배경색 유지
+              { backgroundColor: '#3498db' }, // 파란색으로 변경
               isUpdating && styles.flatButtonDisabled
             ]}
             onPress={handleSave}
