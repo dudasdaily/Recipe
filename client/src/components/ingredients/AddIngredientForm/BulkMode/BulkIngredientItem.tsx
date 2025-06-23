@@ -57,15 +57,13 @@ export function BulkIngredientItem({ item, onUpdate, onRemove, onDrag, index }: 
       </TouchableOpacity>
       <View style={[styles.fields, { overflow: 'visible' }]}>
           <Text style={[styles.labelTitle, { marginBottom: 8, color: '#666', fontSize: 18 }]}>재료 {(typeof index === 'number' && !isNaN(index)) ? index + 1 : '-'}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={styles.labelTitle}>재료명</Text>
-            <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0, marginLeft: 8 }]}
-              placeholder="재료명"
-              value={item.name}
-              onChangeText={(text) => onUpdate({ name: text })}
-            />
-          </View>
+          <Text style={styles.labelTitle}>재료명</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="재료명"
+            value={item.name}
+            onChangeText={(text) => onUpdate({ name: text })}
+          />
           <Text style={styles.labelTitle}>카테고리</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <CategorySelector
@@ -197,16 +195,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#222',
-    fontWeight: 'bold',
+    fontWeight: '500',
     marginBottom: 4,
     marginLeft: 2,
   },
   labelTitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#222',
-    fontWeight: 'bold',
+    fontWeight: '500',
     marginBottom: 4,
     marginLeft: 2,
   },
